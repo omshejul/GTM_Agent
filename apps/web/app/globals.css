@@ -1,0 +1,6 @@
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui; background: #07110f; color: #effaf5; }
+* { box-sizing: border-box; } body { margin: 0; background: radial-gradient(circle at 80% 10%, #173d31 0, transparent 35%), #07110f; }
+main { width: min(960px, calc(100% - 40px)); min-height: 100vh; margin: auto; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: 64px 0; }
+h1 { max-width: 820px; margin: 0; font-size: clamp(3rem, 8vw, 6.5rem); letter-spacing: -.07em; line-height: .92; } p { color: #b9cec5; max-width: 680px; line-height: 1.6; }
+.eyebrow { color: #70edb0; font-size: .75rem; font-weight: 800; letter-spacing: .15em; }.button { align-self: flex-start; padding: 14px 20px; border-radius: 999px; background: #70edb0; color: #07110f; font-weight: 750; text-decoration: none; }
+.grid { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }.grid article, blockquote { margin: 0; border: 1px solid #29483d; background: #0c1d18cc; border-radius: 18px; padding: 24px; }.grid strong { display: block; font-size: 5rem; color: #70edb0; } span, small { color: #88a69a; } @media(max-width: 680px) { .grid { grid-template-columns: 1fr; } }
