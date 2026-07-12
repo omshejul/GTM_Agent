@@ -21,6 +21,19 @@ afterEach(() => {
 });
 
 describe("ShareDialog", () => {
+  it("keeps a created share available when analytics fails", async () => {
+    const failingClient: ProductClient = {
+      ...client,
+      trackEvent: vi.fn(async () => Promise.reject(new Error("analytics offline"))),
+    };
+    render(<ShareDialog result={strongOpportunityFixture} client={failingClient} />);
+    fireEvent.click(screen.getByRole("button", { name: "Share result" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create read-only link" }));
+
+    expect(await screen.findByDisplayValue(/\/share\/demo-fixture-strong$/)).not.toBeNull();
+    expect(screen.queryByText(/could not be created/i)).toBeNull();
+  });
+
   it("requests a server-owned token boundary and exposes a read-only URL", async () => {
     render(<ShareDialog result={strongOpportunityFixture} client={client} />);
     fireEvent.click(screen.getByRole("button", { name: "Share result" }));

@@ -18,11 +18,11 @@ export function ShareDialog({ result, client }: { result: AgentResult; client?: 
     try {
       const { token } = await productClient.createShare(result.id);
       setUrl(`${window.location.origin}/share/${token}`);
-      await productClient.trackEvent("share_created", {
+      void productClient.trackEvent("share_created", {
         scope: result.id,
         resultId: result.id,
         mode: productClient.mode,
-      });
+      }).catch(() => undefined);
     } catch {
       setFeedback("The share link could not be created. Try again.");
     } finally {

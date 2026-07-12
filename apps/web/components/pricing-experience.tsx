@@ -4,12 +4,23 @@ import { useMemo, useState } from "react";
 import { getProductClient, type ProductClient } from "../lib/product-client";
 import { Button } from "./ui/button";
 
+export function isTrustedCheckoutUrl(value: string, expectedHost: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === expectedHost;
+  } catch {
+    return false;
+  }
+}
+
 export function PricingExperience({
   client,
   revenueEnabled,
+  checkoutHost = "checkout.dodopayments.com",
 }: {
   client?: ProductClient;
   revenueEnabled: boolean;
+  checkoutHost?: string;
 }) {
   const productClient = useMemo(() => client ?? getProductClient(), [client]);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +36,9 @@ export function PricingExperience({
         return;
       }
       const { url } = await productClient.startCheckout();
+      if (!isTrustedCheckoutUrl(url, checkoutHost)) {
+        throw new Error("Untrusted checkout URL");
+      }
       window.location.assign(url);
     } catch {
       setError("Checkout is not configured yet. The free analysis demo is still available.");

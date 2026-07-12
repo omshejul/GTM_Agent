@@ -18,6 +18,7 @@ export interface AnalyticsPayload {
 export interface KeyValueStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
 }
 
 interface AnalyticsOptions {
@@ -48,7 +49,12 @@ export function createAnalyticsClient({ storage, sink, createId }: AnalyticsOpti
       const dedupeKey = `${eventPrefix}${event}:${scope}`;
       if (storage.getItem(dedupeKey)) return;
       storage.setItem(dedupeKey, "1");
-      await sink({ event, visitorId, properties });
+      try {
+        await sink({ event, visitorId, properties });
+      } catch (error) {
+        storage.removeItem(dedupeKey);
+        throw error;
+      }
     },
   };
 }

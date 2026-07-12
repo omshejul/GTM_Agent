@@ -6,6 +6,7 @@ function memoryStorage(): KeyValueStorage {
   return {
     getItem: (key) => values.get(key) ?? null,
     setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
   };
 }
 
@@ -30,6 +31,19 @@ describe("visitor analytics", () => {
     expect(sink).toHaveBeenCalledTimes(1);
     release();
     await Promise.all([first, second]);
+  });
+
+  it("allows a transiently failed event to be retried", async () => {
+    const storage = memoryStorage();
+    const sink = vi.fn()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValue(undefined);
+    const analytics = createAnalyticsClient({ storage, sink, createId: () => "visitor-1" });
+
+    await expect(analytics.track("generation_started", { scope: "run-1" })).rejects.toThrow("offline");
+    await analytics.track("generation_started", { scope: "run-1" });
+
+    expect(sink).toHaveBeenCalledTimes(2);
   });
 
   it("deduplicates events by event and scope without sending sensitive content", async () => {

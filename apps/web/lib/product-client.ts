@@ -1,5 +1,11 @@
 import type { AgentResult, GenerateOpportunityInput } from "@ai-gtm/contracts";
 import { strongOpportunityFixture } from "@ai-gtm/contracts";
+import { ConvexReactClient } from "convex/react";
+import {
+  makeFunctionReference,
+  type DefaultFunctionArgs,
+  type FunctionReference,
+} from "convex/server";
 import type { AnalyticsEvent, SafeEventProperties } from "./analytics-client";
 import { createAnalyticsClient } from "./analytics-client";
 
@@ -11,6 +17,21 @@ export interface ProductClient {
   getEntitlement(): Promise<{ paid: boolean }>;
   trackEvent(event: AnalyticsEvent, properties?: SafeEventProperties): Promise<void>;
 }
+
+type PublicFunction<Kind extends "query" | "mutation" | "action", Args extends DefaultFunctionArgs, Result> =
+  FunctionReference<Kind, "public", Args, Result>;
+
+type GenerateArgs = {
+  [Key in keyof GenerateOpportunityInput]: GenerateOpportunityInput[Key];
+};
+
+const convexFunctions = {
+  generateOpportunity: makeFunctionReference<"action">("opportunities:generateOpportunity") as PublicFunction<"action", GenerateArgs, AgentResult>,
+  createShare: makeFunctionReference<"mutation">("shares:createShare") as PublicFunction<"mutation", { resultId: string }, { token: string }>,
+  startCheckout: makeFunctionReference<"action">("payments:startCheckout") as PublicFunction<"action", Record<string, never>, { url: string }>,
+  getEntitlement: makeFunctionReference<"query">("payments:getEntitlement") as PublicFunction<"query", Record<string, never>, { paid: boolean }>,
+  trackEvent: makeFunctionReference<"mutation">("analytics:trackEvent") as PublicFunction<"mutation", { event: AnalyticsEvent; visitorId: string; properties: SafeEventProperties }, null>,
+};
 
 let browserClient: ProductClient | null = null;
 const memoryValues = new Map<string, string>();
@@ -40,6 +61,14 @@ function storage() {
         memoryValues.set(key, value);
       }
       if (!persistent) memoryValues.set(key, value);
+    },
+    removeItem(key: string) {
+      try {
+        persistent?.removeItem(key);
+      } catch {
+        // In-memory cleanup below keeps retries available.
+      }
+      memoryValues.delete(key);
     },
   };
 }
@@ -80,7 +109,32 @@ export function createFixtureProductClient(): ProductClient {
   };
 }
 
+export function createConvexProductClient(url: string): ProductClient {
+  const convex = new ConvexReactClient(url);
+  const analytics = createAnalyticsClient({
+    storage: storage(),
+    createId: () => globalThis.crypto?.randomUUID?.() ?? `visitor-${Date.now()}`,
+    sink: async (payload) => {
+      await convex.mutation(convexFunctions.trackEvent, payload);
+    },
+  });
+
+  return {
+    mode: "convex",
+    generateOpportunity: (input) => convex.action(convexFunctions.generateOpportunity, input),
+    createShare: (resultId) => convex.mutation(convexFunctions.createShare, { resultId }),
+    startCheckout: () => convex.action(convexFunctions.startCheckout, {}),
+    getEntitlement: () => convex.query(convexFunctions.getEntitlement, {}),
+    trackEvent: (event, properties = {}) => analytics.track(event, properties),
+  };
+}
+
 export function getProductClient(): ProductClient {
-  if (!browserClient) browserClient = createFixtureProductClient();
+  if (!browserClient) {
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
+    browserClient = convexUrl
+      ? createConvexProductClient(convexUrl)
+      : createFixtureProductClient();
+  }
   return browserClient;
 }

@@ -12,7 +12,9 @@ export function PublicShare({ result, client }: { result: AgentResult; client?: 
   useEffect(() => {
     if (tracked.current) return;
     tracked.current = true;
-    void productClient.trackEvent("share_viewed", { scope: result.id, resultId: result.id });
+    void productClient
+      .trackEvent("share_viewed", { scope: result.id, resultId: result.id })
+      .catch(() => undefined);
   }, [productClient, result.id]);
 
   return <OpportunityDashboard result={result} readOnly />;

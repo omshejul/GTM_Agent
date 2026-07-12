@@ -7,7 +7,7 @@ export default function AnalyzePage() {
         <a className="brand" href="/">AI GTM OS</a>
         <nav aria-label="Primary navigation">
           <a href="/pricing">Pricing</a>
-          <span className="status" title="This build uses the typed Plan A fixture"><i /> Demo data</span>
+          <span className="status"><i /> Human-reviewed</span>
         </nav>
       </header>
       <section className="analyze-hero">

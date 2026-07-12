@@ -6,6 +6,7 @@ export default async function PricingPage({
   searchParams: Promise<{ checkout?: string }>;
 }) {
   const revenueEnabled = process.env.NEXT_PUBLIC_REVENUE_ENABLED === "true";
+  const checkoutHost = process.env.NEXT_PUBLIC_DODO_CHECKOUT_HOST ?? "checkout.dodopayments.com";
   const { checkout } = await searchParams;
 
   return (
@@ -28,7 +29,7 @@ export default async function PricingPage({
           Checkout was cancelled. No access changes were made.
         </div>
       ) : null}
-      <PricingExperience revenueEnabled={revenueEnabled} />
+      <PricingExperience revenueEnabled={revenueEnabled} checkoutHost={checkoutHost} />
     </main>
   );
 }

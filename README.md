@@ -20,7 +20,7 @@ convex                    Plan A backend ownership boundary (not implemented her
 prompts                   Plan A model prompts; never bundled into the UI
 ```
 
-`ProductClient` is the single integration seam for `generateOpportunity`, sharing, entitlement checks, checkout, and analytics. Until Plan A's generated Convex API is available, the browser uses `strongOpportunityFixture`. The fixture adapter exists for reliable demos; it must be replaced by Convex calls rather than by moving prompts or scoring into React.
+`ProductClient` is the single integration seam for `generateOpportunity`, sharing, entitlement checks, checkout, and analytics. With no `NEXT_PUBLIC_CONVEX_URL`, the browser uses `strongOpportunityFixture` for a reliable demo. When the URL is present, it selects the Convex adapter; prompts and scoring remain server-owned.
 
 A conditional `ConvexProvider` is installed at the root client boundary whenever `NEXT_PUBLIC_CONVEX_URL` is configured.
 
@@ -53,6 +53,7 @@ Browser-safe values:
 
 - `NEXT_PUBLIC_CONVEX_URL` — Convex deployment URL; blank in fixture mode
 - `NEXT_PUBLIC_REVENUE_ENABLED` — shows a live checkout CTA only when `true`
+- `NEXT_PUBLIC_DODO_CHECKOUT_HOST` — exact HTTPS hostname allowed for checkout redirects
 
 Server-side Convex environment variables (never prefix these with `NEXT_PUBLIC_`):
 
@@ -73,16 +74,17 @@ pnpm exec convex dev
 
 ## Connecting Plan A
 
-Implement a Convex-backed `ProductClient` after Plan A publishes generated function references. The adapter must:
+The Convex adapter uses these public function references:
 
-1. call Plan A's `generateOpportunity(input)` action and return `AgentResult` unchanged;
-2. query saved generations and read-only shares from Convex;
-3. call the server mutation that creates opaque share tokens;
-4. send the analytics payloads listed below to Plan A's analytics mutation;
-5. call the server-side Dodo checkout action and query server-verified entitlement;
-6. map `INVALID_INPUT`, `RESEARCH_FAILED`, `AI_FAILED`, and `INVALID_AI_OUTPUT` through `lib/errors.ts`.
+- action `opportunities:generateOpportunity`
+- mutation `shares:createShare`
+- mutation `analytics:trackEvent`
+- action `payments:startCheckout`
+- query `payments:getEntitlement`
 
-Do not add a browser fallback for research, model calls, scoring, payment verification, or authorization.
+Plan A must implement those functions with the shared input/result contract. The adapter returns `AgentResult` unchanged, requests opaque share tokens, sends privacy-safe analytics, starts checkout server-side, and reads server-verified entitlement. Saved-generation and public-share server queries can replace the fixture-only routes when their visibility contract lands.
+
+Map `INVALID_INPUT`, `RESEARCH_FAILED`, `AI_FAILED`, and `INVALID_AI_OUTPUT` through `lib/errors.ts`. Do not add a browser fallback for research, model calls, scoring, payment verification, or authorization.
 
 ## Analytics
 
