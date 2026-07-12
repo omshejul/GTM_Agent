@@ -1,28 +1,42 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { strongOpportunityFixture } from "@ai-gtm/contracts";
 import { PublicShare } from "../../../components/public-share";
+import {
+  fetchSharedResult,
+  metadataForSharedResult,
+} from "../../../lib/shared-result";
 
-export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
   const { token } = await params;
-  if (token !== `demo-${strongOpportunityFixture.id}`) return { title: "Shared opportunity not found" };
-  return {
-    title: `${strongOpportunityFixture.companyName} opportunity brief · AI GTM OS`,
-    description: `Evidence-backed intent score: ${strongOpportunityFixture.intentScore}/100`,
-    robots: { index: false, follow: false },
-  };
+  const snapshot = await fetchSharedResult(token).catch(() => null);
+  return snapshot
+    ? metadataForSharedResult(snapshot.result)
+    : { title: "Shared opportunity not found", robots: { index: false } };
 }
 
-export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
+export default async function SharePage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
   const { token } = await params;
-  if (token !== `demo-${strongOpportunityFixture.id}`) notFound();
+  const snapshot = await fetchSharedResult(token).catch(() => null);
+  if (!snapshot) notFound();
   return (
     <main className="product-shell">
       <header className="page-header">
-        <a className="brand" href="/">AI GTM OS</a>
-        <span className="status"><i /> Public read-only view</span>
+        <a className="brand" href="/">
+          AI GTM OS
+        </a>
+        <span className="status">
+          <i /> Public read-only view
+        </span>
       </header>
-      <PublicShare result={strongOpportunityFixture} />
+      <PublicShare result={snapshot.result} roast={snapshot.roast} />
     </main>
   );
 }

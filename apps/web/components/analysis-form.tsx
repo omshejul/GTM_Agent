@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from "react";
 import type { GenerateOpportunityInput } from "@ai-gtm/contracts";
-import { primarySample } from "../lib/sample-scenarios";
 
 const emptyForm: GenerateOpportunityInput = {
   sellerSolution: "",
@@ -19,7 +18,10 @@ interface AnalysisFormProps {
   isLoading?: boolean;
 }
 
-export function AnalysisForm({ onGenerate, isLoading = false }: AnalysisFormProps) {
+export function AnalysisForm({
+  onGenerate,
+  isLoading = false,
+}: AnalysisFormProps) {
   const [form, setForm] = useState<GenerateOpportunityInput>(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,13 +34,17 @@ export function AnalysisForm({ onGenerate, isLoading = false }: AnalysisFormProp
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const hasDirectSource = Boolean(form.sourceText?.trim() || form.sourceUrl?.trim());
+    const hasDirectSource = Boolean(
+      form.sourceText?.trim() || form.sourceUrl?.trim(),
+    );
     const canResearchCompany = Boolean(
       form.researchWithLinkUp && form.companyName?.trim(),
     );
 
     if (!form.sellerSolution.trim()) {
-      setError("Describe the solution you sell before analyzing an opportunity.");
+      setError(
+        "Describe the solution you sell before analyzing an opportunity.",
+      );
       return;
     }
     if (!hasDirectSource && !canResearchCompany) {
@@ -58,18 +64,11 @@ export function AnalysisForm({ onGenerate, isLoading = false }: AnalysisFormProp
         <div>
           <p className="eyebrow">Opportunity input</p>
           <h2>Describe your market and the buying signal.</h2>
-          <small>Use a company name with research enabled, or provide source text or a URL.</small>
+          <small>
+            Use a company name with research enabled, or provide source text or
+            a URL.
+          </small>
         </div>
-        <button
-          className="button button-secondary"
-          type="button"
-          onClick={() => {
-            setForm(primarySample.input);
-            setError(null);
-          }}
-        >
-          Load sample scenario
-        </button>
       </div>
 
       <div className="form-grid">
@@ -131,18 +130,30 @@ export function AnalysisForm({ onGenerate, isLoading = false }: AnalysisFormProp
         <input
           type="checkbox"
           checked={form.researchWithLinkUp}
-          onChange={(event) => update("researchWithLinkUp", event.target.checked)}
+          onChange={(event) =>
+            update("researchWithLinkUp", event.target.checked)
+          }
         />
         <span>
           <strong>Research this company with LinkUp</strong>
-          <small>Research can take up to a minute and is available when your workspace has live research enabled.</small>
+          <small>
+            Research can take up to a minute and is available when your
+            workspace has live research enabled.
+          </small>
         </span>
       </label>
 
-      {error ? <div className="alert" role="alert">{error}</div> : null}
+      {error ? (
+        <div className="alert" role="alert">
+          {error}
+        </div>
+      ) : null}
 
       <div className="form-actions">
-        <p>Analysis finds evidence-backed timing signals. It does not send outreach.</p>
+        <p>
+          Analysis finds evidence-backed timing signals. It does not send
+          outreach.
+        </p>
         <button className="button" type="submit" disabled={isLoading}>
           {isLoading ? "Analyzing…" : "Analyze opportunity"}
         </button>

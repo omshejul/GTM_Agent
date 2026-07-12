@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   analyticsMutationArgs,
+  checkoutResult,
   createConvexProductClient,
   createFixtureProductClient,
+  entitlementResult,
 } from "./product-client";
 
 describe("ProductClient selection adapters", () => {
@@ -30,5 +32,19 @@ describe("analyticsMutationArgs", () => {
       visitorId: "server-id",
       properties: { code: "INVALID_AI_OUTPUT" },
     });
+  });
+});
+
+describe("payment contract adapters", () => {
+  it("maps backend checkout and entitlement results", () => {
+    expect(
+      checkoutResult({
+        checkoutUrl: "https://checkout.dodopayments.com/session",
+        checkoutId: "checkout-1",
+      }),
+    ).toEqual({ url: "https://checkout.dodopayments.com/session" });
+    expect(
+      entitlementResult({ tier: "paid", entitled: true, status: "active" }),
+    ).toEqual({ paid: true });
   });
 });

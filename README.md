@@ -1,40 +1,34 @@
 # AI GTM OS
 
-A Next.js product experience for turning warehouse-expansion evidence into an explainable intent score, a recommended solution, and human-reviewed outreach.
-
-The repository currently contains Plan A's shared TypeScript contract and deterministic fixtures, plus the Plan B product experience. The browser never runs prompts, researches companies, calculates scores, verifies entitlements, or receives provider credentials.
+AI GTM OS turns warehouse-expansion evidence into an explainable deterministic intent score, a recommended solution, and human-reviewed outreach. Production runs as a self-hosted Next.js application with a self-hosted Convex backend.
 
 ## Architecture
 
 ```text
-apps/web                 Next.js App Router product
-  app/analyze            input, loading, failure, and result flow
-  app/results/[id]       saved-result route boundary
-  app/share/[token]      read-only public result route
-  app/pricing            feature-gated Dodo checkout UI
-  components             accessible product and shadcn-style UI primitives
-  lib/product-client.ts  typed frontend/backend boundary
-  lib/analytics-client   anonymous, deduplicated event client
-packages/contracts       shared inputs, results, signals, fixtures, scoring
-convex                    Plan A backend ownership boundary (not implemented here)
-prompts                   Plan A model prompts; never bundled into the UI
+apps/web                  Next.js App Router product
+  app/analyze             input, loading, failure, and live result flow
+  app/results/[id]        private saved-generation route
+  app/share/[token]       immutable public snapshot route and metadata
+  app/pricing             fail-closed Dodo checkout UI
+  lib/product-client.ts   browser-to-Convex integration boundary
+convex                    schema, generation, research, AI, sharing, analytics, payments
+packages/contracts        runtime contracts and deterministic scoring
 ```
 
-`ProductClient` is the single integration seam for `generateOpportunity`, sharing, entitlement checks, checkout, and analytics. With no `NEXT_PUBLIC_CONVEX_URL`, the browser uses `strongOpportunityFixture` for a reliable demo. When the URL is present, it selects the Convex adapter; prompts and scoring remain server-owned.
+The browser never receives provider credentials, researches companies directly, calculates scores, validates payment webhooks, or grants entitlements. Anonymous private operations use a server-issued visitor credential stored in browser storage. Public shares contain immutable reduced snapshots and are addressed by random bearer tokens whose hashes are stored server-side.
 
-A conditional `ConvexProvider` is installed at the root client boundary whenever `NEXT_PUBLIC_CONVEX_URL` is configured.
-
-## Product routes
+## Routes
 
 - `/` — product landing page
-- `/analyze` — ICP/source form and opportunity dashboard
-- `/results/fixture-strong` — fixture-backed saved-result route
-- `/share/demo-fixture-strong` — read-only demo share with social metadata
-- `/pricing` — free demo and feature-gated paid plan
+- `/analyze` — source and LinkUp research form with live opportunity results
+- `/results/[id]` — saved result for the browser that created it
+- `/share/[token]` — public read-only result and optional roast snapshot
+- `/pricing` — free analysis and feature-gated Dodo checkout
+- `/dodo` — Dodo webhook; unsigned requests fail closed
 
-The analysis form requires a seller solution and at least one of source text, source URL, or company name with LinkUp research enabled. Recoverable errors preserve every field. Outreach is always labeled as draft content and is never sent automatically.
+The analysis form requires a seller solution and source text, a source URL, or a company name with LinkUp research enabled. Recoverable failures preserve every field. Outreach is always a draft and is never sent automatically.
 
-## Setup
+## Local setup
 
 Requirements: Node 20.19+ and pnpm 10.12+.
 
@@ -45,97 +39,76 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm dev
 ```
 
-Open `http://localhost:3000`. Leaving `NEXT_PUBLIC_CONVEX_URL` blank runs fixture mode.
+### Browser-safe environment variables
 
-### Environment variables
+- `NEXT_PUBLIC_CONVEX_URL` — required live Convex URL
+- `NEXT_PUBLIC_REVENUE_ENABLED` — enables checkout UI only when explicitly `true`
+- `NEXT_PUBLIC_DODO_CHECKOUT_HOST` — exact trusted checkout hostname
+- `NEXT_PUBLIC_DODO_PRODUCT_ID` — browser-safe allowlisted Dodo product identifier
 
-Browser-safe values:
+### Server-side Convex environment variables
 
-- `NEXT_PUBLIC_CONVEX_URL` — Convex deployment URL; blank in fixture mode
-- `NEXT_PUBLIC_REVENUE_ENABLED` — shows a live checkout CTA only when `true`
-- `NEXT_PUBLIC_DODO_CHECKOUT_HOST` — exact HTTPS hostname allowed for checkout redirects
-
-Server-side Convex environment variables (never prefix these with `NEXT_PUBLIC_`):
+Never prefix these with `NEXT_PUBLIC_`:
 
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
 - `OPENAI_BASE_URL` — optional OpenAI-compatible endpoint
-- `LINKUP_API_KEY` — optional research provider
-- `DODO_PAYMENTS_API_KEY` — optional Revenue track
-- `DODO_WEBHOOK_SECRET` — optional Revenue track webhook verification
+- `LINKUP_API_KEY` — required only for LinkUp-enabled research
+- `DODO_PAYMENTS_API_KEY`
+- `DODO_WEBHOOK_SECRET`
+- `DODO_PRODUCT_IDS` — comma-separated checkout allowlist
+- `APP_ORIGIN` — trusted payment return origin
+- `DODO_PAYMENTS_ENABLED` — explicit payment feature switch
 
-Configure backend values with Convex, not in `apps/web/.env.local`:
+Configure secrets in the Convex deployment environment, not browser files.
 
-```bash
-pnpm exec convex env set OPENAI_API_KEY '<value>'
-pnpm exec convex env set OPENAI_MODEL 'gpt-4.1-mini'
-pnpm exec convex dev
-```
+## Live Convex contracts
 
-## Connecting Plan A
+The frontend uses:
 
-The Convex adapter uses these public function references:
-
-- action `opportunities:generateOpportunity`
-- mutation `shares:createShare`
+- action `analytics:createVisitor`
 - mutation `analytics:trackEvent`
-- action `payments:startCheckout`
+- action `opportunities:generateOpportunity`
+- query `generations:getGeneration`
+- action `shares:createShare`
+- action `shares:getSharedResult`
+- action `payments:createCheckout`
 - query `payments:getEntitlement`
 
-Plan A must implement those functions with the shared input/result contract. The adapter returns `AgentResult` unchanged, requests opaque share tokens, sends privacy-safe analytics, starts checkout server-side, and reads server-verified entitlement. Saved-generation and public-share server queries can replace the fixture-only routes when their visibility contract lands.
+Generation, analytics, saved-result retrieval, and share creation reuse the server-issued visitor credential. Checkout consumes `{ checkoutUrl, checkoutId }`; entitlement consumes `{ tier, entitled, status }`. Payment return parameters never unlock access.
 
-Map `INVALID_INPUT`, `RESEARCH_FAILED`, `AI_FAILED`, and `INVALID_AI_OUTPUT` through `lib/errors.ts`. Do not add a browser fallback for research, model calls, scoring, payment verification, or authorization.
+## Analytics and diagnostics
 
-## Analytics
+Analytics uses controlled event names and privacy-safe properties. Diagnostics share a correlation ID across browser and Convex logs. Logs contain request shape, stages, counts, duration, provider status, repair attempts, and stable error codes—not source text, prompts, credentials, outreach, or private URLs.
 
-The client generates one anonymous UUID, persists it locally, and deduplicates events by event name and operation scope. It emits:
-
-- `visitor_started`
-- `signup_completed` (adapter-ready; emit after the auth flow succeeds)
-- `generation_started`
-- `generation_completed`
-- `generation_failed`
-- `share_created`
-- `share_viewed`
-
-Fixture mode writes a capped local development log under `ai-gtm:analytics-log`. A Convex adapter should send the same safe payload to Plan A. Event properties contain operation IDs, result IDs, error codes, and mode only—never source text, outreach, credentials, or personal data.
-
-## Sample scenarios
-
-`apps/web/lib/sample-scenarios.ts` contains strong, moderate, funding-only, irrelevant, and multi-signal input examples. Expected bands are QA annotations only. The UI never hard-codes scores. The strong scenario is loadable in one click.
-
-## Dodo Payments
-
-The pricing route is safe by default: checkout stays disabled unless `NEXT_PUBLIC_REVENUE_ENABLED=true`. Even when enabled, the client first checks backend entitlement and then requests a server-created checkout URL. Success/cancel URL parameters never unlock access; only Convex entitlement may do that.
-
-## Tests and quality gates
+## Testing
 
 ```bash
 pnpm test
 pnpm typecheck
-pnpm lint
+pnpm --filter @ai-gtm/backend lint
+pnpm --filter @ai-gtm/contracts lint
 pnpm build
 ```
 
-Tests cover input preservation and validation, fixture generation, explainable score rendering, error mapping, anonymous analytics deduplication, share-token creation, public/revenue gates, and sample coverage.
+Tests cover deterministic scoring, runtime validation, AI grounding and repair, anonymous visitor ownership, persisted generations, public share snapshots and revocation, analytics, Dodo webhook processing, checkout guards, UI failure recovery, and contract adapters.
 
-## Cloudflare Workers
+## Production deployment
 
-The web app uses `@opennextjs/cloudflare`, Wrangler, Node compatibility flags, and immutable caching for Next.js static assets.
+Production is self-hosted:
 
-```bash
-pnpm --filter @ai-gtm/web preview   # production-style local Worker preview
-pnpm --filter @ai-gtm/web deploy    # build and deploy
-pnpm --filter @ai-gtm/web upload    # upload a version without deploying it
-pnpm --filter @ai-gtm/web cf-typegen
-```
+- Next.js: `127.0.0.1:3010`
+- Convex API: `127.0.0.1:3210`
+- Convex HTTP actions: `127.0.0.1:3211`
+- Caddy: public HTTPS routing for `gtmagent.omshejul.com`
+- systemd user services: `gtm-web.service`, `gtm-convex.service`
 
-Set `NEXT_PUBLIC_CONVEX_URL` in the Cloudflare build environment. Keep model, LinkUp, and Dodo secrets in Convex. After deployment, verify `/analyze`, `/results/fixture-strong`, `/share/demo-fixture-strong`, and `/pricing`, then test the real Convex/share/payment return URLs when Plan A is connected.
+A release is complete only after tests, typecheck, production build, Convex deployment, service restart, and public end-to-end verification succeed.
 
 ## Troubleshooting
 
-- **Fixture mode appears unexpectedly:** ensure `NEXT_PUBLIC_CONVEX_URL` is present at build time and the Plan A adapter has replaced the fixture client.
-- **LinkUp option fails:** paste source text or disable research; LinkUp is optional and server-side.
-- **Checkout is disabled:** set `NEXT_PUBLIC_REVENUE_ENABLED=true` only after the Dodo server action, webhook, and entitlement query are configured.
-- **Cloudflare preview fails:** run `pnpm install`, confirm Node 20.19+, then run `pnpm --filter @ai-gtm/web preview` from the repository root.
-- **A share is missing:** fixture mode supports only `demo-fixture-strong`; production shares require Plan A's stored token query.
+- LinkUp failure: retry with pasted source text or disable company research; the key is server-side.
+- Saved result not found: use the same browser that created it; ownership uses its server-issued visitor credential.
+- Share not found: the token may be invalid, expired, or revoked.
+- Checkout disabled: verify all payment environment variables, authenticated identity, product allowlist, trusted origin, and explicit feature switches.
+- AI output rejected: use the correlation ID in browser and Convex logs to inspect grounding or schema validation failures.

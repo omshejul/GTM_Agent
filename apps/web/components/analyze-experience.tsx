@@ -131,10 +131,7 @@ export function AnalyzeExperience({ client }: { client?: ProductClient }) {
           <section className="empty-state">
             <span>01</span>
             <h2>Your evidence-backed opportunity brief will appear here.</h2>
-            <p>
-              Load the sample scenario for a reliable demo or paste your own
-              source material.
-            </p>
+            <p>Paste source material or research a named company to begin.</p>
           </section>
         )}
       </div>

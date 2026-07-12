@@ -16,6 +16,7 @@ import { createAnalyticsClient } from "./analytics-client";
 export interface ProductClient {
   readonly mode: "fixture" | "convex";
   generateOpportunity(input: GenerateOpportunityInput): Promise<AgentResult>;
+  getGeneration?(id: string): Promise<AgentResult | null>;
   createShare(resultId: string): Promise<{ token: string }>;
   startCheckout(): Promise<{ url: string }>;
   getEntitlement(): Promise<{ paid: boolean }>;
@@ -39,6 +40,13 @@ const convexFunctions = {
   generateOpportunity: makeFunctionReference<"action">(
     "opportunities:generateOpportunity",
   ) as PublicFunction<"action", GenerateArgs, AgentResult>,
+  getGeneration: makeFunctionReference<"query">(
+    "generations:getGeneration",
+  ) as PublicFunction<
+    "query",
+    { id: string; visitorId?: string },
+    { status: string; result?: AgentResult } | null
+  >,
   createVisitor: makeFunctionReference<"action">(
     "analytics:createVisitor",
   ) as PublicFunction<"action", Record<string, never>, { visitorId: string }>,
@@ -50,11 +58,19 @@ const convexFunctions = {
     { token: string }
   >,
   startCheckout: makeFunctionReference<"action">(
-    "payments:startCheckout",
-  ) as PublicFunction<"action", Record<string, never>, { url: string }>,
+    "payments:createCheckout",
+  ) as PublicFunction<
+    "action",
+    { productId: string; returnUrl: string },
+    { checkoutUrl: string; checkoutId: string | null }
+  >,
   getEntitlement: makeFunctionReference<"query">(
     "payments:getEntitlement",
-  ) as PublicFunction<"query", Record<string, never>, { paid: boolean }>,
+  ) as PublicFunction<
+    "query",
+    Record<string, never>,
+    { tier: "free" | "paid"; entitled: boolean; status: string }
+  >,
   trackEvent: makeFunctionReference<"mutation">(
     "analytics:trackEvent",
   ) as PublicFunction<
@@ -77,6 +93,20 @@ export function analyticsMutationArgs(
     visitorId,
     properties: payload.properties,
   };
+}
+
+export function checkoutResult(result: {
+  checkoutUrl: string;
+  checkoutId: string | null;
+}) {
+  return { url: result.checkoutUrl };
+}
+
+export function entitlementResult(result: {
+  entitled: boolean;
+  [key: string]: unknown;
+}) {
+  return { paid: result.entitled };
 }
 
 let browserClient: ProductClient | null = null;
@@ -146,6 +176,11 @@ export function createFixtureProductClient(): ProductClient {
       await Promise.resolve();
       return strongOpportunityFixture;
     },
+    async getGeneration(id) {
+      return id === strongOpportunityFixture.id
+        ? strongOpportunityFixture
+        : null;
+    },
     async createShare(resultId) {
       browserStorage.setItem(`ai-gtm:share:${resultId}`, "public");
       return { token: `demo-${resultId}` };
@@ -202,13 +237,32 @@ export function createConvexProductClient(url: string): ProductClient {
         ...input,
         visitorId: await getServerVisitorId(),
       }),
+    getGeneration: async (id) => {
+      const generation = await convex.query(convexFunctions.getGeneration, {
+        id,
+        visitorId: await getServerVisitorId(),
+      });
+      return generation?.status === "completed" && generation.result
+        ? generation.result
+        : null;
+    },
     createShare: async (generationId) =>
       convex.action(convexFunctions.createShare, {
         generationId,
         visitorId: await getServerVisitorId(),
       }),
-    startCheckout: () => convex.action(convexFunctions.startCheckout, {}),
-    getEntitlement: () => convex.query(convexFunctions.getEntitlement, {}),
+    startCheckout: async () => {
+      const productId = process.env.NEXT_PUBLIC_DODO_PRODUCT_ID?.trim();
+      if (!productId) throw new Error("Revenue product is not configured");
+      return checkoutResult(
+        await convex.action(convexFunctions.startCheckout, {
+          productId,
+          returnUrl: `${window.location.origin}/pricing?checkout=success`,
+        }),
+      );
+    },
+    getEntitlement: async () =>
+      entitlementResult(await convex.query(convexFunctions.getEntitlement, {})),
     trackEvent: (event, properties = {}) => analytics.track(event, properties),
   };
 }

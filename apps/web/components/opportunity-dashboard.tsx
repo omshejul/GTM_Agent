@@ -26,7 +26,19 @@ export function OpportunityDashboard({
           <div className="signal-pills">
             {result.signals.map((signal) => <span className="badge" key={signal}>{labelSignal(signal)}</span>)}
           </div>
-          {!readOnly ? <ShareDialog result={result} client={client} /> : <span className="badge badge-muted">Read-only shared brief</span>}
+          {!readOnly ? (
+            <>
+              <a
+                className="button button-secondary"
+                href={`/results/${result.id}`}
+              >
+                Open saved result
+              </a>
+              <ShareDialog result={result} client={client} />
+            </>
+          ) : (
+            <span className="badge badge-muted">Read-only shared brief</span>
+          )}
         </div>
       </div>
 
