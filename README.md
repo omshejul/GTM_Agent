@@ -18,7 +18,7 @@ cp .env.example apps/web/.env.local
 pnpm dev
 ```
 
-Run `pnpm test`, `pnpm typecheck`, and `pnpm build` before merging. Secrets belong in Convex environment variables. The intelligence layer calls an OpenAI-compatible API directly; Hermes is not a runtime dependency. Payment and LinkUp features remain optional and must not block pasted-text analysis.
+Run `pnpm test`, `pnpm typecheck`, and `pnpm build` before merging. Secrets belong in Convex environment variables. The intelligence layer calls an OpenAI-compatible API directly. Payment and LinkUp features remain optional and must not block pasted-text analysis.
 
 Required runtime configuration:
 

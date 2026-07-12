@@ -1,7 +1,7 @@
 # AI GTM Operating System
 ## Lightweight ICP Discovery Agent: Warehouse Expansion Intelligence
 
-> **Runtime decision:** Hermes may assist development, but it is not a deployed product dependency. The application calls an OpenAI-compatible model API directly.
+> **Runtime decision:** The application calls an OpenAI-compatible model API directly from its backend.
 
 **Buildathon scope:** AI as Agency / AI as a Service  
 **Estimated MVP build time:** 4–5 hours  
@@ -244,7 +244,7 @@ Choose the simplest stack the team can implement confidently.
 
 - **UI:** Streamlit
 - **Application logic:** Python
-- **LLM:** OpenAI-compatible model configured in Hermes
+- **LLM:** OpenAI-compatible model called directly by the backend
 - **Validation:** Pydantic
 - **Storage:** JSON file or SQLite
 - **Export:** CSV or JSON download
@@ -387,11 +387,11 @@ Use one strong scenario and one weak scenario to show that the system can distin
 
 ---
 
-## 12. Hermes Build Instructions
+## 12. Codex Build Instructions
 
-Use Hermes as the coding and orchestration assistant for the repository.
+Use Codex as the coding and orchestration assistant for the repository. Codex is a development tool and is not part of the deployed application architecture.
 
-### Recommended first Hermes prompt
+### Recommended first Codex prompt
 
 ```text
 You are implementing a buildathon MVP called "AI GTM Operating System – Lightweight ICP Discovery Agent: Warehouse Expansion Intelligence."
@@ -415,15 +415,14 @@ Constraints:
 First create the complete repository structure and implementation checklist. Then implement files one by one, run tests, and fix errors.
 ```
 
-### Suggested Hermes workflow
+### Suggested Codex workflow
 
 ```bash
-hermes status
 cd warehouse-expansion-agent
-hermes
+codex
 ```
 
-Inside Hermes:
+Inside Codex:
 
 1. Paste the build prompt.
 2. Ask it to create the repository structure.
@@ -433,7 +432,7 @@ Inside Hermes:
 6. Test the sample scenarios manually.
 7. Ask it to produce a final README and demo script.
 
-### Follow-up Hermes prompts
+### Follow-up Codex prompts
 
 **For debugging**
 

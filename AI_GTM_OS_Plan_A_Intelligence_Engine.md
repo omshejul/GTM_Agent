@@ -1,18 +1,18 @@
 # Plan A — Intelligence, Data, and Integrations
 
-> **Runtime decision:** Hermes is a development/orchestration assistant only, not a product dependency. References to Hermes below mean the direct OpenAI-compatible AI adapter, implemented as `convex/ai.ts` and configured with `OPENAI_API_KEY`, `OPENAI_MODEL`, and optional `OPENAI_BASE_URL`.
+> **Runtime decision:** The product calls an OpenAI-compatible model through `convex/ai.ts`, configured with `OPENAI_API_KEY`, `OPENAI_MODEL`, and optional `OPENAI_BASE_URL`.
 
 ## AI GTM OS: Warehouse Expansion Agent
 
 **Owner:** Teammate A  
-**Primary area:** Convex backend, Hermes intelligence, LinkUp research, analytics storage, and payment backend  
+**Primary area:** Convex backend, AI intelligence, LinkUp research, analytics storage, and payment backend
 **Estimated effort:** 3–4 hours  
 **Works in parallel with:** Plan B — Next.js Product Experience
 
 ## Stack
 
 - **Backend and database:** Convex
-- **AI:** Hermes
+- **AI:** Direct OpenAI-compatible API with structured output
 - **Search and company research:** LinkUp
 - **Analytics:** First-party events stored in Convex
 - **Payments:** Dodo Payments for the Revenue track
@@ -20,7 +20,7 @@
 
 ## Goal
 
-Build the server-side intelligence pipeline and persistent data model. The backend accepts an ICP and source material, optionally researches a company with LinkUp, asks Hermes to extract evidence-grounded expansion signals and outreach, applies deterministic scoring, stores the generation, and returns a stable typed result to the Next.js application.
+Build the server-side intelligence pipeline and persistent data model. The backend accepts an ICP and source material, optionally researches a company with LinkUp, calls an OpenAI-compatible model to extract evidence-grounded expansion signals and outreach, applies deterministic scoring, stores the generation, and returns a stable typed result to the Next.js application.
 
 ## Files owned by this track
 
@@ -31,7 +31,7 @@ convex/
 ├── generations.ts
 ├── analytics.ts
 ├── research.ts
-├── hermes.ts
+├── ai.ts
 ├── scoring.ts
 ├── payments.ts
 └── http.ts
@@ -70,7 +70,7 @@ export type GenerateOpportunityInput = {
 
 The result must include company, industry, event type, location, event date, detected signals, evidence, score breakdown, intent score/band, recommended solution, reasoning, contact role, next action, LinkedIn message, email opener, confidence, and source citations.
 
-Unknown facts must be `null`; Hermes must never invent them. Return stable machine-readable error codes such as `INVALID_INPUT`, `RESEARCH_FAILED`, `AI_FAILED`, and `INVALID_AI_OUTPUT`.
+Unknown facts must be `null`; the model must never invent them. Return stable machine-readable error codes such as `INVALID_INPUT`, `RESEARCH_FAILED`, `AI_FAILED`, and `INVALID_AI_OUTPUT`.
 
 ## Convex data model
 
@@ -104,14 +104,15 @@ Use LinkUp only when the user asks the product to analyze a website or company.
 - Research the supplied company/domain and warehouse-expansion signals.
 - Preserve source URLs, titles, dates, and short evidence snippets.
 - Apply request timeouts and return a clear recoverable error.
-- Pass normalized research context and citations to Hermes.
+- Pass normalized research context and citations to the AI adapter.
 - Never claim that absence of search evidence proves absence of expansion.
 - Make the feature optional so pasted source text works without LinkUp.
 
-### 3. Implement Hermes intelligence
+### 3. Implement AI intelligence
 
-- Invoke Hermes from a Convex action or a narrowly scoped server-side adapter.
-- Ask Hermes for strict JSON matching the shared contract.
+- Invoke the OpenAI-compatible API from a narrowly scoped `convex/ai.ts` server-side adapter.
+- Request strict JSON matching the shared contract, using structured output when the configured provider supports it.
+- Read `OPENAI_API_KEY`, `OPENAI_MODEL`, and optional `OPENAI_BASE_URL` only from Convex environment variables.
 - Extract company/event facts, controlled signals, evidence, confidence, solution fit, buyer role, next action, and outreach.
 - Ground every claim in supplied text or LinkUp sources.
 - Reject or repair malformed output once; otherwise return `INVALID_AI_OUTPUT`.
@@ -119,7 +120,7 @@ Use LinkUp only when the user asks the product to analyze a website or company.
 
 ### 4. Implement deterministic scoring
 
-Keep numeric scoring in TypeScript, outside Hermes:
+Keep numeric scoring in TypeScript, outside the model:
 
 | Signal | Weight |
 |---|---:|
@@ -142,7 +143,7 @@ Keep numeric scoring in TypeScript, outside Hermes:
 ```text
 validate input
 → optionally research with LinkUp
-→ call Hermes for structured extraction
+→ call the AI adapter for structured extraction
 → score deterministically
 → validate final result
 → store generation/opportunity
@@ -193,7 +194,7 @@ Keep payment work feature-gated so it cannot block the core buildathon demo.
 
 ### 9. Test
 
-Cover scoring weights/caps, duplicates, weak evidence, validators, authorization, malformed Hermes output, LinkUp failure, generation persistence, analytics validation, share-token access, and payment webhook idempotency.
+Cover scoring weights/caps, duplicates, weak evidence, validators, authorization, malformed model output, AI-provider failure, LinkUp failure, generation persistence, analytics validation, share-token access, and payment webhook idempotency.
 
 ## Early handoff to Plan B
 

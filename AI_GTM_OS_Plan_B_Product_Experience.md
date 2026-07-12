@@ -1,6 +1,6 @@
 # Plan B — Next.js Product Experience
 
-> **Runtime decision:** Hermes is not part of the deployed product. The Convex backend calls an OpenAI-compatible model API directly; the frontend never receives its credentials.
+> **Runtime decision:** The Convex backend calls an OpenAI-compatible model API directly; the frontend never receives its credentials.
 
 ## AI GTM OS: Warehouse Expansion Agent
 
@@ -22,7 +22,7 @@
 
 Build a polished web product that collects ICP and source inputs, invokes Plan A's Convex action, explains the evidence and deterministic score, presents human-reviewed outreach, supports public result sharing, and deploys on Cloudflare Workers.
 
-Use Plan A's typed fixture until its action is ready. Do not reproduce Hermes prompts, research, or scoring in React components.
+Use Plan A's typed fixture until its action is ready. Do not reproduce AI prompts, research, or scoring in React components.
 
 ## Files owned by this track
 
@@ -53,7 +53,7 @@ package.json
 wrangler.jsonc
 ```
 
-Avoid editing Convex schema, Hermes/LinkUp adapters, scoring, payment webhooks, or backend authorization owned by Plan A.
+Avoid editing Convex schema, AI/LinkUp adapters, scoring, payment webhooks, or backend authorization owned by Plan A.
 
 ## Shared integration contract
 
@@ -74,7 +74,7 @@ Plan B renders the returned object and maps known error codes to friendly messag
 - Add Convex and connect `ConvexProvider` at the correct client boundary.
 - Add Cloudflare's supported Next.js adapter and Wrangler configuration.
 - Create `.env.example` using placeholder variable names only.
-- Keep all Hermes, LinkUp, Convex deployment, and Dodo secrets server-side.
+- Keep all model-provider, LinkUp, Convex deployment, and Dodo secrets server-side.
 
 Confirm local commands for Next.js, Convex dev, tests, and Cloudflare preview.
 
@@ -175,7 +175,7 @@ Prepare strong, moderate, funding-only, irrelevant, and multi-signal examples. M
 
 ### 11. Document and prepare the demo
 
-README must explain architecture, setup, environment variables, local development, Convex deployment, Cloudflare deployment, LinkUp behavior, Hermes integration, analytics events, Dodo configuration, tests, and troubleshooting.
+README must explain architecture, setup, environment variables, local development, Convex deployment, Cloudflare deployment, LinkUp behavior, direct model integration, analytics events, Dodo configuration, tests, and troubleshooting.
 
 Demo sequence:
 
@@ -197,7 +197,7 @@ Demo sequence:
 ### Midpoint
 
 - Replace the fixture with the real Convex action.
-- Test a successful generation, LinkUp failure, and Hermes failure.
+- Test a successful generation, LinkUp failure, and AI-provider failure.
 - Report contract mismatches rather than working around them in components.
 
 ### Final
