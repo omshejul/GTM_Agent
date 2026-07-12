@@ -6,7 +6,11 @@ import {
   type DefaultFunctionArgs,
   type FunctionReference,
 } from "convex/server";
-import type { AnalyticsEvent, SafeEventProperties } from "./analytics-client";
+import type {
+  AnalyticsEvent,
+  AnalyticsPayload,
+  SafeEventProperties,
+} from "./analytics-client";
 import { createAnalyticsClient } from "./analytics-client";
 
 export interface ProductClient {
@@ -15,23 +19,65 @@ export interface ProductClient {
   createShare(resultId: string): Promise<{ token: string }>;
   startCheckout(): Promise<{ url: string }>;
   getEntitlement(): Promise<{ paid: boolean }>;
-  trackEvent(event: AnalyticsEvent, properties?: SafeEventProperties): Promise<void>;
+  trackEvent(
+    event: AnalyticsEvent,
+    properties?: SafeEventProperties,
+  ): Promise<void>;
 }
 
-type PublicFunction<Kind extends "query" | "mutation" | "action", Args extends DefaultFunctionArgs, Result> =
-  FunctionReference<Kind, "public", Args, Result>;
+type PublicFunction<
+  Kind extends "query" | "mutation" | "action",
+  Args extends DefaultFunctionArgs,
+  Result,
+> = FunctionReference<Kind, "public", Args, Result>;
 
 type GenerateArgs = {
   [Key in keyof GenerateOpportunityInput]: GenerateOpportunityInput[Key];
 };
 
 const convexFunctions = {
-  generateOpportunity: makeFunctionReference<"action">("opportunities:generateOpportunity") as PublicFunction<"action", GenerateArgs, AgentResult>,
-  createShare: makeFunctionReference<"mutation">("shares:createShare") as PublicFunction<"mutation", { resultId: string }, { token: string }>,
-  startCheckout: makeFunctionReference<"action">("payments:startCheckout") as PublicFunction<"action", Record<string, never>, { url: string }>,
-  getEntitlement: makeFunctionReference<"query">("payments:getEntitlement") as PublicFunction<"query", Record<string, never>, { paid: boolean }>,
-  trackEvent: makeFunctionReference<"mutation">("analytics:trackEvent") as PublicFunction<"mutation", { event: AnalyticsEvent; visitorId: string; properties: SafeEventProperties }, null>,
+  generateOpportunity: makeFunctionReference<"action">(
+    "opportunities:generateOpportunity",
+  ) as PublicFunction<"action", GenerateArgs, AgentResult>,
+  createVisitor: makeFunctionReference<"action">(
+    "analytics:createVisitor",
+  ) as PublicFunction<"action", Record<string, never>, { visitorId: string }>,
+  createShare: makeFunctionReference<"action">(
+    "shares:createShare",
+  ) as PublicFunction<
+    "action",
+    { generationId: string; visitorId?: string },
+    { token: string }
+  >,
+  startCheckout: makeFunctionReference<"action">(
+    "payments:startCheckout",
+  ) as PublicFunction<"action", Record<string, never>, { url: string }>,
+  getEntitlement: makeFunctionReference<"query">(
+    "payments:getEntitlement",
+  ) as PublicFunction<"query", Record<string, never>, { paid: boolean }>,
+  trackEvent: makeFunctionReference<"mutation">(
+    "analytics:trackEvent",
+  ) as PublicFunction<
+    "mutation",
+    {
+      name: AnalyticsEvent;
+      visitorId: string;
+      properties: SafeEventProperties;
+    },
+    string
+  >,
 };
+
+export function analyticsMutationArgs(
+  payload: AnalyticsPayload,
+  visitorId: string,
+) {
+  return {
+    name: payload.event,
+    visitorId,
+    properties: payload.properties,
+  };
+}
 
 let browserClient: ProductClient | null = null;
 const memoryValues = new Map<string, string>();
@@ -75,17 +121,24 @@ function storage() {
 
 export function createFixtureProductClient(): ProductClient {
   const browserStorage = storage();
-  const analytics = typeof window === "undefined"
-    ? null
-    : createAnalyticsClient({
-        storage: browserStorage,
-        createId: () => globalThis.crypto?.randomUUID?.() ?? `visitor-${Date.now()}`,
-        sink: async (payload) => {
-          const key = "ai-gtm:analytics-log";
-          const current = JSON.parse(browserStorage.getItem(key) ?? "[]") as unknown[];
-          browserStorage.setItem(key, JSON.stringify([...current.slice(-49), payload]));
-        },
-      });
+  const analytics =
+    typeof window === "undefined"
+      ? null
+      : createAnalyticsClient({
+          storage: browserStorage,
+          createId: () =>
+            globalThis.crypto?.randomUUID?.() ?? `visitor-${Date.now()}`,
+          sink: async (payload) => {
+            const key = "ai-gtm:analytics-log";
+            const current = JSON.parse(
+              browserStorage.getItem(key) ?? "[]",
+            ) as unknown[];
+            browserStorage.setItem(
+              key,
+              JSON.stringify([...current.slice(-49), payload]),
+            );
+          },
+        });
 
   return {
     mode: "fixture",
@@ -111,18 +164,49 @@ export function createFixtureProductClient(): ProductClient {
 
 export function createConvexProductClient(url: string): ProductClient {
   const convex = new ConvexReactClient(url);
+  const browserStorage = storage();
+  const serverVisitorKey = "ai-gtm:server-visitor-id";
+  let visitorPromise: Promise<string> | null = null;
+  const getServerVisitorId = () => {
+    const existing = browserStorage.getItem(serverVisitorKey);
+    if (existing) return Promise.resolve(existing);
+    visitorPromise ??= convex
+      .action(convexFunctions.createVisitor, {})
+      .then(({ visitorId }) => {
+        browserStorage.setItem(serverVisitorKey, visitorId);
+        return visitorId;
+      })
+      .catch((error) => {
+        visitorPromise = null;
+        throw error;
+      });
+    return visitorPromise;
+  };
   const analytics = createAnalyticsClient({
-    storage: storage(),
-    createId: () => globalThis.crypto?.randomUUID?.() ?? `visitor-${Date.now()}`,
+    storage: browserStorage,
+    createId: () =>
+      globalThis.crypto?.randomUUID?.() ?? `visitor-${Date.now()}`,
     sink: async (payload) => {
-      await convex.mutation(convexFunctions.trackEvent, payload);
+      const visitorId = await getServerVisitorId();
+      await convex.mutation(
+        convexFunctions.trackEvent,
+        analyticsMutationArgs(payload, visitorId),
+      );
     },
   });
 
   return {
     mode: "convex",
-    generateOpportunity: (input) => convex.action(convexFunctions.generateOpportunity, input),
-    createShare: (resultId) => convex.mutation(convexFunctions.createShare, { resultId }),
+    generateOpportunity: async (input) =>
+      convex.action(convexFunctions.generateOpportunity, {
+        ...input,
+        visitorId: await getServerVisitorId(),
+      }),
+    createShare: async (generationId) =>
+      convex.action(convexFunctions.createShare, {
+        generationId,
+        visitorId: await getServerVisitorId(),
+      }),
     startCheckout: () => convex.action(convexFunctions.startCheckout, {}),
     getEntitlement: () => convex.query(convexFunctions.getEntitlement, {}),
     trackEvent: (event, properties = {}) => analytics.track(event, properties),

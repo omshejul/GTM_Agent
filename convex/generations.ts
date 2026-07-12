@@ -43,9 +43,29 @@ const failRef = makeFunctionReference<
   null
 >("generations:failGeneration");
 
+export function generationInputDiagnostics(input: GenerateOpportunityInput) {
+  return {
+    traceId: input.idempotencyKey ?? null,
+    hasCompanyName: Boolean(input.companyName),
+    hasSourceText: Boolean(input.sourceText),
+    hasSourceUrl: Boolean(input.sourceUrl),
+    researchEnabled: input.researchWithLinkUp,
+    sourceTextLength: input.sourceText?.length ?? 0,
+  };
+}
+
+function generationLog(
+  level: "info" | "error",
+  event: string,
+  details: Record<string, string | number | boolean | null | undefined>,
+) {
+  console[level](`[AI_GTM] ${event}`, details);
+}
+
 export const generateOpportunity = actionGeneric({
   args: generateOpportunityArgs,
   handler: async (ctx, rawInput): Promise<AgentResult> => {
+    const startedAt = Date.now();
     let input: GenerateOpportunityInput;
     try {
       const { parseGenerateOpportunityInput } =
@@ -59,8 +79,19 @@ export const generateOpportunity = actionGeneric({
         recoverable: true,
       });
     }
+    const traceId = input.idempotencyKey ?? crypto.randomUUID();
+    generationLog("info", "generation.received", {
+      ...generationInputDiagnostics(input),
+      traceId,
+    });
     const identity = await ctx.auth.getUserIdentity();
     const shouldPersist = Boolean(identity?.subject || input.visitorId);
+    generationLog("info", "generation.authorization_resolved", {
+      traceId,
+      authenticated: Boolean(identity?.subject),
+      hasVisitorCredential: Boolean(input.visitorId),
+      shouldPersist,
+    });
     const started = shouldPersist
       ? await ctx.runMutation(startRef, {
           input,
@@ -70,17 +101,36 @@ export const generateOpportunity = actionGeneric({
       : undefined;
     if (started?.existingResult) return started.existingResult;
     try {
+      generationLog("info", "generation.research_started", { traceId });
       const research = await researchCompany(input);
+      generationLog("info", "generation.research_completed", {
+        traceId,
+        researchSourceCount: research.length,
+      });
+      generationLog("info", "generation.ai_started", { traceId });
       const extracted = await extractOpportunity(input, research);
+      generationLog("info", "generation.ai_completed", {
+        traceId,
+        signalCount: extracted.signals.length,
+        evidenceCount: extracted.evidence.length,
+        citationCount: extracted.citations.length,
+      });
       if (!started) {
-        return parseAgentResult({
+        const result = parseAgentResult({
           ...extracted,
           ...recommendForSignals(extracted.signals),
           id: crypto.randomUUID(),
           ...scoreSignals(extracted.signals),
         });
+        generationLog("info", "generation.completed", {
+          traceId,
+          persisted: false,
+          durationMs: Date.now() - startedAt,
+          intentScore: result.intentScore,
+        });
+        return result;
       }
-      return await ctx.runMutation(completeRef, {
+      const result = await ctx.runMutation(completeRef, {
         generationId: started.generationId,
         extracted,
         model: process.env.OPENAI_MODEL ?? "unknown",
@@ -89,6 +139,14 @@ export const generateOpportunity = actionGeneric({
         ).origin,
         researchSourceCount: research.length,
       });
+      generationLog("info", "generation.completed", {
+        traceId,
+        persisted: true,
+        generationId: started.generationId,
+        durationMs: Date.now() - startedAt,
+        intentScore: result.intentScore,
+      });
+      return result;
     } catch (error) {
       const serviceError =
         error instanceof AgentServiceError
@@ -98,6 +156,14 @@ export const generateOpportunity = actionGeneric({
               "Generation could not be completed",
               true,
             );
+      generationLog("error", "generation.failed", {
+        traceId,
+        errorCode: serviceError.code,
+        recoverable: serviceError.recoverable,
+        durationMs: Date.now() - startedAt,
+        persisted: Boolean(started),
+        generationId: started?.generationId,
+      });
       if (started) {
         await ctx.runMutation(failRef, {
           generationId: started.generationId,

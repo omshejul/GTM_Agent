@@ -17,6 +17,11 @@ export class AgentServiceError extends Error {
   }
 }
 
+export function safeValidationMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : "invalid JSON";
+  return message.replace(/https?:\/\/[^\s]+/gi, "[redacted-url]").slice(0, 500);
+}
+
 const SYSTEM_PROMPT = `You are an evidence-grounded India-first warehouse expansion analyst. Return only JSON.
 Unknown company, industry, location, event, and date facts must be null. Every signal and factual claim must be directly supported by a verbatim excerpt from supplied source text or a numbered research source. Funding alone is not evidence of warehouse expansion. Preserve uncertainty and contradictions; never treat missing evidence as evidence of absence. Never fabricate urgency, a buying process, a person, or contact details. Outreach is a draft for human review and is never sent automatically. The backend will deterministically replace solution, buyer, and next-action recommendations.
 Allowed signals: ${signals.join(", ")}.
@@ -240,6 +245,18 @@ export async function extractOpportunity(
   let repairMessage: string | undefined;
   try {
     for (let attempt = 0; attempt < 2; attempt += 1) {
+      console.info("[AI_GTM] ai.request_started", {
+        traceId: input.idempotencyKey ?? null,
+        attempt: attempt + 1,
+        model,
+        providerOrigin: new URL(
+          options.baseUrl ??
+            process.env.OPENAI_BASE_URL ??
+            "https://api.openai.com/v1",
+        ).origin,
+        researchSourceCount: research.length,
+        hasSourceText: Boolean(input.sourceText),
+      });
       let response: Response;
       try {
         response = await fetcher(
@@ -275,6 +292,11 @@ export async function extractOpportunity(
         );
       }
       if (!response.ok) {
+        console.error("[AI_GTM] ai.request_failed", {
+          traceId: input.idempotencyKey ?? null,
+          attempt: attempt + 1,
+          status: response.status,
+        });
         throw new AgentServiceError(
           "AI_FAILED",
           `The AI provider returned status ${response.status}`,
@@ -287,15 +309,34 @@ export async function extractOpportunity(
         };
         const content = payload.choices?.[0]?.message?.content;
         if (!content) throw new Error("Missing model content");
-        return validateGrounding(
+        const extracted = validateGrounding(
           parseExtractedOpportunity(JSON.parse(content)),
           input,
           research,
         );
+        console.info("[AI_GTM] ai.output_validated", {
+          traceId: input.idempotencyKey ?? null,
+          attempt: attempt + 1,
+          signalCount: extracted.signals.length,
+          evidenceCount: extracted.evidence.length,
+          citationCount: extracted.citations.length,
+        });
+        return extracted;
       } catch (error) {
+        console.warn("[AI_GTM] ai.output_invalid", {
+          traceId: input.idempotencyKey ?? null,
+          attempt: attempt + 1,
+          errorName: error instanceof Error ? error.name : typeof error,
+          validationMessage: safeValidationMessage(error),
+          repairScheduled: attempt === 0,
+        });
         repairMessage = `Your previous response was invalid: ${error instanceof Error ? error.message : "invalid JSON"}. Return one corrected JSON object only.`;
       }
     }
+    console.error("[AI_GTM] ai.output_rejected", {
+      traceId: input.idempotencyKey ?? null,
+      attempts: 2,
+    });
     throw new AgentServiceError(
       "INVALID_AI_OUTPUT",
       "The AI provider returned invalid structured output",
