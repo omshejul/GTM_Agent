@@ -170,6 +170,8 @@ Support these MVP events:
 - `generation_failed`
 - `share_created`
 - `share_viewed`
+- `lead_roast_generated`
+- `lead_roast_shared`
 
 Validate allowed event names and properties. Do not store sensitive article contents or secrets in analytics properties.
 
@@ -181,7 +183,33 @@ Validate allowed event names and properties. Do not store sensitive article cont
 - Record share creation and view events.
 - Allow future expiry/revocation without redesigning the schema.
 
-### 8. Add Dodo Payments backend for the Revenue track
+### 8. Add “Roast This Lead” viral output
+
+Create an optional, shareable layer that turns a completed opportunity analysis into workplace-safe sales humor without weakening evidence standards.
+
+- Expose a typed backend action such as `generateLeadRoast({ generationId, tone })`.
+- Support three controlled tones: `professional_wit`, `sales_team_spicy`, and `workplace_safe_unhinged`.
+- Return a structured `LeadRoast` containing a headline, one-line roast, expansion-energy score label, diagnosis, recommended treatment, cited signal IDs, and share-card text.
+- Generate humor only from the already validated `AgentResult`; never send raw unverified research directly to the roast prompt.
+- Require every joke to trace to at least one detected signal or evidence item. If there is insufficient evidence, return `INSUFFICIENT_ROAST_EVIDENCE` instead of inventing material.
+- Target corporate announcements, sales situations, and operational patterns—not individual employees, protected traits, layoffs, tragedies, safety incidents, or personal hardship.
+- Keep the feature opt-in and label its output as AI-generated. Never publish or post automatically.
+- Store the selected public roast fields with the share record so public links remain stable even if prompts change later.
+- Add deterministic moderation checks before persistence, rate-limit generation, and record `lead_roast_generated` and `lead_roast_shared` without storing the full joke in analytics properties.
+- Make the action idempotent for the same generation, tone, and prompt version unless the user explicitly requests a new variant.
+
+Example output:
+
+```text
+Expansion Energy: 87/100
+“They leased 400,000 sq ft, hired a VP of Logistics, and still haven't replied to your email.”
+Diagnosis: Acute Warehouse Growth
+Recommended treatment: WMS before spreadsheet season returns
+```
+
+Keep this feature-gated so it cannot block the core analysis and sharing demo.
+
+### 9. Add Dodo Payments backend for the Revenue track
 
 - Create checkout server-side using Dodo Payments.
 - Add an authenticated webhook endpoint through Convex HTTP actions.
@@ -192,9 +220,9 @@ Validate allowed event names and properties. Do not store sensitive article cont
 
 Keep payment work feature-gated so it cannot block the core buildathon demo.
 
-### 9. Test
+### 10. Test
 
-Cover scoring weights/caps, duplicates, weak evidence, validators, authorization, malformed model output, AI-provider failure, LinkUp failure, generation persistence, analytics validation, share-token access, and payment webhook idempotency.
+Cover scoring weights/caps, duplicates, weak evidence, validators, authorization, malformed model output, AI-provider failure, LinkUp failure, generation persistence, analytics validation, share-token access, roast evidence grounding, tone validation, moderation rejection, roast idempotency, and payment webhook idempotency.
 
 ## Git coordination
 
@@ -221,4 +249,5 @@ Deliver within the first checkpoint:
 - Generations, shares, and analytics events persist in Convex.
 - Private results are authorization-safe.
 - Dodo webhooks are verified and idempotent for the Revenue track.
+- “Roast This Lead” produces optional, evidence-grounded, workplace-safe, share-ready output and fails closed when evidence is insufficient.
 - Plan B integrates through stable Convex functions without duplicating intelligence logic.
