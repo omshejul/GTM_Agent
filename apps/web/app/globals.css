@@ -335,24 +335,22 @@ small {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px 14px;
   max-width: 400px;
 }
 .badge {
   display: inline-flex;
-  padding: 7px 10px;
-  border: 1px solid rgba(114, 239, 178, 0.34);
-  border-radius: 999px;
-  background: rgba(114, 239, 178, 0.09);
-  color: #aaf7d0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent);
   font-size: 0.73rem;
-  font-weight: 720;
+  font-weight: 800;
   text-transform: capitalize;
 }
 .badge-muted {
-  border-color: var(--line);
-  background: rgba(255, 255, 255, 0.03);
-  color: #bdd0c7;
+  color: var(--muted);
 }
 .dashboard-grid {
   display: grid;
@@ -728,12 +726,9 @@ textarea::placeholder {
   color: #912018;
 }
 .badge {
-  border-color: rgba(8, 122, 80, 0.25);
-  background: rgba(8, 122, 80, 0.07);
   color: #075d3e;
 }
 .badge-muted {
-  background: #f5f8f6;
   color: #40594f;
 }
 .progress {
