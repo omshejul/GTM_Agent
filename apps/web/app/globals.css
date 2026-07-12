@@ -712,13 +712,53 @@ textarea:focus-visible {
   color: #344e43;
 }
 input,
-textarea {
+textarea,
+select {
   border-color: #bfd1c7;
   background: #fff;
 }
 input::placeholder,
 textarea::placeholder {
   color: #82958b;
+}
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.text-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.result-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+  gap: 32px;
+}
+.result-tools select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #bfd1c7;
+  border-radius: 10px;
+}
+.roast-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid rgba(8, 122, 80, 0.22);
+  border-radius: 16px;
+  background: #f0faf5;
+}
+.roast-card h3,
+.roast-card p {
+  margin: 0;
 }
 .alert {
   border-color: rgba(180, 35, 24, 0.3);
@@ -798,7 +838,8 @@ textarea::placeholder {
   .dashboard-grid,
   .outreach-grid,
   .pricing-grid,
-  .home-proof {
+  .home-proof,
+  .result-tools {
     grid-template-columns: 1fr;
   }
   .signal-pills {

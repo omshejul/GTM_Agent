@@ -2,7 +2,11 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference, type FunctionReference } from "convex/server";
-import type { AgentResult, LeadRoast } from "@ai-gtm/contracts";
+import {
+  strongOpportunityFixture,
+  type AgentResult,
+  type LeadRoast,
+} from "@ai-gtm/contracts";
 
 export interface SharedResultSnapshot {
   result: AgentResult;
@@ -19,6 +23,9 @@ const getSharedResult = makeFunctionReference<"action">(
 >;
 
 export const fetchSharedResult = cache(async (token: string) => {
+  if (token === `demo-${strongOpportunityFixture.id}`) {
+    return { result: strongOpportunityFixture, roast: null };
+  }
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.trim();
   if (!convexUrl) return null;
   const client = new ConvexHttpClient(convexUrl);

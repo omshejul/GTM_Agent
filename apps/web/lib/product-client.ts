@@ -1,5 +1,13 @@
-import type { AgentResult, GenerateOpportunityInput } from "@ai-gtm/contracts";
-import { strongOpportunityFixture } from "@ai-gtm/contracts";
+import type {
+  AgentResult,
+  GenerateOpportunityInput,
+  LeadRoast,
+  LeadRoastTone,
+} from "@ai-gtm/contracts";
+import {
+  generateDeterministicLeadRoast,
+  strongOpportunityFixture,
+} from "@ai-gtm/contracts";
 import { ConvexReactClient } from "convex/react";
 import {
   makeFunctionReference,
@@ -18,6 +26,7 @@ export interface ProductClient {
   generateOpportunity(input: GenerateOpportunityInput): Promise<AgentResult>;
   getGeneration?(id: string): Promise<AgentResult | null>;
   createShare(resultId: string): Promise<{ token: string }>;
+  generateLeadRoast?(resultId: string, tone: LeadRoastTone): Promise<LeadRoast>;
   startCheckout(): Promise<{ url: string }>;
   getEntitlement(): Promise<{ paid: boolean }>;
   trackEvent(
@@ -56,6 +65,13 @@ const convexFunctions = {
     "action",
     { generationId: string; visitorId?: string },
     { token: string }
+  >,
+  generateLeadRoast: makeFunctionReference<"action">(
+    "roasts:generateLeadRoast",
+  ) as PublicFunction<
+    "action",
+    { generationId: string; tone: LeadRoastTone; visitorId?: string },
+    LeadRoast
   >,
   startCheckout: makeFunctionReference<"action">(
     "payments:createCheckout",
@@ -185,6 +201,9 @@ export function createFixtureProductClient(): ProductClient {
       browserStorage.setItem(`ai-gtm:share:${resultId}`, "public");
       return { token: `demo-${resultId}` };
     },
+    async generateLeadRoast(_resultId, tone) {
+      return generateDeterministicLeadRoast(strongOpportunityFixture, tone);
+    },
     async startCheckout() {
       throw { code: "REVENUE_NOT_CONFIGURED" };
     },
@@ -249,6 +268,12 @@ export function createConvexProductClient(url: string): ProductClient {
     createShare: async (generationId) =>
       convex.action(convexFunctions.createShare, {
         generationId,
+        visitorId: await getServerVisitorId(),
+      }),
+    generateLeadRoast: async (generationId, tone) =>
+      convex.action(convexFunctions.generateLeadRoast, {
+        generationId,
+        tone,
         visitorId: await getServerVisitorId(),
       }),
     startCheckout: async () => {

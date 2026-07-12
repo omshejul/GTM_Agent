@@ -4,6 +4,7 @@ import { OutreachCard } from "./outreach-card";
 import { ShareDialog } from "./share-dialog";
 import { ScoreCard, labelSignal } from "./score-card";
 import type { ProductClient } from "../lib/product-client";
+import { ResultActions } from "./result-actions";
 
 export function OpportunityDashboard({
   result,
@@ -20,11 +21,19 @@ export function OpportunityDashboard({
         <div>
           <p className="eyebrow">Analysis complete</p>
           <h1>{result.companyName ?? "Unidentified company"}</h1>
-          <p>{[result.eventType, result.location, result.eventDate].filter(Boolean).join(" · ")}</p>
+          <p>
+            {[result.eventType, result.location, result.eventDate]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
         </div>
         <div className="result-actions">
           <div className="signal-pills">
-            {result.signals.map((signal) => <span className="badge" key={signal}>{labelSignal(signal)}</span>)}
+            {result.signals.map((signal) => (
+              <span className="badge" key={signal}>
+                {labelSignal(signal)}
+              </span>
+            ))}
           </div>
           {!readOnly ? (
             <>
@@ -49,14 +58,25 @@ export function OpportunityDashboard({
           <h2>{result.recommendedSolution}</h2>
           <p>{result.reasoning}</p>
           <dl>
-            <div><dt>Best contact</dt><dd>{result.recommendedContactRole}</dd></div>
-            <div><dt>Next action</dt><dd>{result.nextAction}</dd></div>
+            <div>
+              <dt>Best contact</dt>
+              <dd>{result.recommendedContactRole}</dd>
+            </div>
+            <div>
+              <dt>Next action</dt>
+              <dd>{result.nextAction}</dd>
+            </div>
           </dl>
         </article>
       </div>
 
       <EvidenceList result={result} />
-      {!readOnly ? <OutreachCard result={result} /> : null}
+      {!readOnly ? (
+        <>
+          <OutreachCard result={result} />
+          <ResultActions result={result} client={client} />
+        </>
+      ) : null}
     </section>
   );
 }

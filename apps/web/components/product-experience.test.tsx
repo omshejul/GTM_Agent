@@ -14,7 +14,7 @@ describe("AnalysisForm", () => {
     render(<AnalysisForm onGenerate={onGenerate} />);
 
     fireEvent.change(screen.getByLabelText("Seller solution"), {
-      target: { value: "Warehouse automation" },
+      target: { value: "Warehouse Automation" },
     });
     fireEvent.click(
       screen.getByRole("button", { name: "Analyze opportunity" }),
@@ -22,11 +22,29 @@ describe("AnalysisForm", () => {
 
     expect(onGenerate).not.toHaveBeenCalled();
     expect(screen.getByRole("alert").textContent).toContain(
-      "Add source text, a source URL, or enable company research",
+      "Add source text, or enable LinkUp research",
     );
     expect(
       (screen.getByLabelText("Seller solution") as HTMLInputElement).value,
-    ).toBe("Warehouse automation");
+    ).toBe("Warehouse Automation");
+  });
+
+  it("loads an India-focused example in one click", () => {
+    const onGenerate = vi.fn();
+    render(<AnalysisForm onGenerate={onGenerate} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load example" }));
+
+    expect(
+      (screen.getByLabelText("Seller solution") as HTMLSelectElement).value,
+    ).toBe("Warehouse Management System");
+    expect(
+      (screen.getByLabelText("Target state or region") as HTMLSelectElement)
+        .value,
+    ).toBe("Pan India");
+    expect(
+      (screen.getByLabelText("Source text") as HTMLTextAreaElement).value,
+    ).toContain("fulfilment centre");
   });
 
   it("submits user-provided contract input", () => {
@@ -69,7 +87,9 @@ describe("OpportunityDashboard", () => {
       screen.getByText(/review and approve before sending/i),
     ).not.toBeNull();
     expect(
-      screen.getByRole("link", { name: "Open saved result" }).getAttribute("href"),
+      screen
+        .getByRole("link", { name: "Open saved result" })
+        .getAttribute("href"),
     ).toBe(`/results/${strongOpportunityFixture.id}`);
   });
 });

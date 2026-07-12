@@ -26,7 +26,7 @@ The browser never receives provider credentials, researches companies directly, 
 - `/pricing` — free analysis and feature-gated Dodo checkout
 - `/dodo` — Dodo webhook; unsigned requests fail closed
 
-The analysis form requires a seller solution and source text, a source URL, or a company name with LinkUp research enabled. Recoverable failures preserve every field. Outreach is always a draft and is never sent automatically.
+The analysis form uses controlled seller-solution, industry, and India state/region inputs. Users can load a safe example in one click. The core flow requires pasted source text; a source URL or company-only request requires LinkUp research. Recoverable failures preserve every field. Results include copyable human-reviewed outreach, JSON export, and an optional evidence-grounded workplace-safe lead roast. Outreach is never sent automatically.
 
 ## Local setup
 
@@ -92,6 +92,8 @@ pnpm build
 ```
 
 Tests cover deterministic scoring, runtime validation, AI grounding and repair, anonymous visitor ownership, persisted generations, public share snapshots and revocation, analytics, Dodo webhook processing, checkout guards, UI failure recovery, and contract adapters.
+
+The fixture boundary remains intentionally usable without a backend: analysis returns the typed demo result, saved-result and public-share routes resolve, JSON export works, and the roast generator stays deterministic and evidence-grounded.
 
 ## Production deployment
 

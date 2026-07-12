@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { GenerateOpportunityInput } from "@ai-gtm/contracts";
+import {
+  indiaStatesAndRegions,
+  sellerSolutions,
+  targetIndustries,
+  type GenerateOpportunityInput,
+} from "@ai-gtm/contracts";
+import { primarySample } from "../lib/sample-scenarios";
 
 const emptyForm: GenerateOpportunityInput = {
   sellerSolution: "",
@@ -23,6 +29,7 @@ export function AnalysisForm({
   isLoading = false,
 }: AnalysisFormProps) {
   const [form, setForm] = useState<GenerateOpportunityInput>(emptyForm);
+  const [customSolution, setCustomSolution] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function update<K extends keyof GenerateOpportunityInput>(
@@ -34,11 +41,10 @@ export function AnalysisForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const hasDirectSource = Boolean(
-      form.sourceText?.trim() || form.sourceUrl?.trim(),
-    );
+    const hasDirectSource = Boolean(form.sourceText?.trim());
     const canResearchCompany = Boolean(
-      form.researchWithLinkUp && form.companyName?.trim(),
+      form.researchWithLinkUp &&
+      (form.companyName?.trim() || form.sourceUrl?.trim()),
     );
 
     if (!form.sellerSolution.trim()) {
@@ -49,13 +55,22 @@ export function AnalysisForm({
     }
     if (!hasDirectSource && !canResearchCompany) {
       setError(
-        "Add source text, a source URL, or enable company research with a company name.",
+        "Add source text, or enable LinkUp research with a company name or source URL.",
       );
       return;
     }
 
+    const sellerSolution =
+      form.sellerSolution === "Custom"
+        ? `Custom:${customSolution.trim()}`
+        : form.sellerSolution;
+    if (form.sellerSolution === "Custom" && !customSolution.trim()) {
+      setError("Describe the custom solution you sell.");
+      return;
+    }
+
     setError(null);
-    onGenerate(form);
+    onGenerate({ ...form, sellerSolution });
   }
 
   return (
@@ -74,29 +89,60 @@ export function AnalysisForm({
       <div className="form-grid">
         <label className="field field-wide">
           <span>Seller solution · required</span>
-          <input
+          <select
             aria-label="Seller solution"
             required
             value={form.sellerSolution}
             onChange={(event) => update("sellerSolution", event.target.value)}
-            placeholder="e.g. Warehouse management and inventory visibility"
-          />
+          >
+            <option value="">Select a solution</option>
+            {sellerSolutions.map((solution) => (
+              <option key={solution} value={solution}>
+                {solution}
+              </option>
+            ))}
+          </select>
         </label>
+        {form.sellerSolution === "Custom" ? (
+          <label className="field field-wide">
+            <span>Custom solution · required</span>
+            <input
+              aria-label="Custom solution"
+              value={customSolution}
+              onChange={(event) => setCustomSolution(event.target.value)}
+              placeholder="Describe the product or service"
+            />
+          </label>
+        ) : null}
         <label className="field">
           <span>Target industry</span>
-          <input
+          <select
+            aria-label="Target industry"
             value={form.targetIndustry ?? ""}
             onChange={(event) => update("targetIndustry", event.target.value)}
-            placeholder="e.g. Retail"
-          />
+          >
+            <option value="">Any supported industry</option>
+            {targetIndustries.map((industry) => (
+              <option key={industry} value={industry}>
+                {industry}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="field">
-          <span>Target region</span>
-          <input
-            value={form.targetRegion ?? ""}
-            onChange={(event) => update("targetRegion", event.target.value)}
-            placeholder="e.g. India"
-          />
+          <span>Target state or region</span>
+          <select
+            aria-label="Target state or region"
+            value={form.targetState ?? ""}
+            onChange={(event) => update("targetState", event.target.value)}
+          >
+            <option value="">All India</option>
+            {indiaStatesAndRegions.map((region) => (
+              <option key={region} value={region}>
+                {region}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="field">
           <span>Company name</span>
@@ -154,9 +200,29 @@ export function AnalysisForm({
           Analysis finds evidence-backed timing signals. It does not send
           outreach.
         </p>
-        <button className="button" type="submit" disabled={isLoading}>
-          {isLoading ? "Analyzing…" : "Analyze opportunity"}
-        </button>
+        <div className="button-row">
+          <button
+            className="button button-secondary"
+            type="button"
+            disabled={isLoading}
+            onClick={() => {
+              setForm({
+                ...primarySample.input,
+                targetState:
+                  primarySample.input.targetState ??
+                  primarySample.input.targetRegion,
+                targetRegion: "",
+              });
+              setCustomSolution("");
+              setError(null);
+            }}
+          >
+            Load example
+          </button>
+          <button className="button" type="submit" disabled={isLoading}>
+            {isLoading ? "Analyzing…" : "Analyze opportunity"}
+          </button>
+        </div>
       </div>
     </form>
   );
