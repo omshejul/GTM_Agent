@@ -456,6 +456,31 @@ Audit the project for fabricated facts, invalid JSON handling, missing environme
 
 ## 13. 4–5 Hour Build Schedule
 
+### Git collaboration cadence
+
+Treat `origin/main` as the shared source of truth throughout the build:
+
+1. Before starting a work block, run `git pull --rebase origin main`.
+2. Pull again before integrating work or pushing when another teammate may have updated `main`.
+3. Keep commits small and coherent: one contract change, backend function, UI component, test group, or documentation update per commit.
+4. Run the checks relevant to the changed area before committing.
+5. Push each verified increment promptly instead of accumulating a large local batch.
+6. If a rebase conflicts, resolve it against the frozen shared contract and rerun affected checks before pushing.
+7. Never force-push shared `main`; use `git push origin main` after a successful rebase.
+
+Recommended loop:
+
+```bash
+git pull --rebase origin main
+# make one focused change
+pnpm test
+pnpm typecheck
+git add <focused-files>
+git commit -m "type(scope): concise change"
+git pull --rebase origin main
+git push origin main
+```
+
 ### Hour 1: Foundation
 
 - Initialize repository and environment

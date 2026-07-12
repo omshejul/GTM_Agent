@@ -189,6 +189,13 @@ Demo sequence:
 
 ## Coordination checkpoints
 
+### Git coordination
+
+- Pull with `git pull --rebase origin main` before each focused frontend work block and again immediately before pushing.
+- Commit and push small, verified UI increments rather than holding a large local batch.
+- Pull contract and fixture changes from Plan A before wiring each integration; do not locally duplicate or work around a stale contract.
+- Never force-push shared `main`; resolve rebases locally and rerun affected checks.
+
 ### First 20 minutes
 
 - Agree on shared TypeScript contracts, Convex function names, error codes, and analytics event names.

@@ -196,6 +196,13 @@ Keep payment work feature-gated so it cannot block the core buildathon demo.
 
 Cover scoring weights/caps, duplicates, weak evidence, validators, authorization, malformed model output, AI-provider failure, LinkUp failure, generation persistence, analytics validation, share-token access, and payment webhook idempotency.
 
+## Git coordination
+
+- Pull with `git pull --rebase origin main` before each focused backend work block and again immediately before pushing.
+- Commit and push small, verified backend increments so Plan B receives contracts, fixtures, and Convex functions continuously.
+- Keep shared-contract changes in their own commits and announce them before dependent implementation changes.
+- Never force-push shared `main`; resolve rebases locally and rerun affected tests.
+
 ## Early handoff to Plan B
 
 Deliver within the first checkpoint:
