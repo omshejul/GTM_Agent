@@ -94,6 +94,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_scope", ["scope"])
+    .index("by_generation", ["generationId"])
     .index("by_owner", ["ownerSubject"])
     .index("by_visitor", ["visitorId"]),
   subscriptions: defineTable({

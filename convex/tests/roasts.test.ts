@@ -88,15 +88,14 @@ describe("generateLeadRoast", () => {
     const { token } = await t.action(createShare, {
       generationId: started.generationId,
       visitorId: "roast-visitor",
-      roastTone: "professional_wit",
     });
     await expect(t.action(getSharedResult, { token })).resolves.toMatchObject({
       result: { id: started.generationId },
-      roast: first,
+      roast: variant,
     });
     await t.run(async (ctx) => {
       const share = (await ctx.db.query("shares").collect())[0]!;
-      expect(share.publicRoast).toEqual(first);
+      expect(share.publicRoast).toEqual(variant);
       const events = await ctx.db.query("analyticsEvents").collect();
       expect(
         events.filter((event) => event.name === "lead_roast_shared"),

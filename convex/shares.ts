@@ -151,7 +151,13 @@ export const authorizeGenerationForShare = internalQueryGeneric({
             q.eq("scope", `${args.generationId}:${args.roastTone}:v1`),
           )
           .unique()
-      : null;
+      : await ctx.db
+          .query("leadRoasts")
+          .withIndex("by_generation", (q) =>
+            q.eq("generationId", generation._id),
+          )
+          .order("desc")
+          .first();
     return {
       result: generation.result as AgentResult,
       publicRoast: roast?.publicRoast as LeadRoast | undefined,
