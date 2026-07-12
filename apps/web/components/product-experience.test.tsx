@@ -36,7 +36,7 @@ describe("AnalysisForm", () => {
 
     expect(onGenerate).toHaveBeenCalledWith(
       expect.objectContaining({
-        sellerSolution: "Warehouse management and inventory visibility",
+        sellerSolution: "Warehouse Management System",
         companyName: "Example Retail Ltd",
         researchWithLinkUp: false,
       }),
@@ -48,9 +48,11 @@ describe("OpportunityDashboard", () => {
   it("renders explainable score evidence and human-review messaging", () => {
     render(<OpportunityDashboard result={strongOpportunityFixture} />);
 
-    expect(screen.getByText("55")).not.toBeNull();
+    expect(screen.getByText("70")).not.toBeNull();
     expect(screen.getByText("Score breakdown")).not.toBeNull();
-    expect(screen.getByText(/announced a new fulfilment centre/i)).not.toBeNull();
+    expect(
+      screen.getAllByText(/announced a new fulfilment centre/i),
+    ).not.toHaveLength(0);
     expect(screen.getByText(/review and approve before sending/i)).not.toBeNull();
   });
 });

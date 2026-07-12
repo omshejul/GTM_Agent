@@ -8,9 +8,9 @@ export interface SampleScenario {
 }
 
 const base = {
-  sellerSolution: "Warehouse management and inventory visibility",
+  sellerSolution: "Warehouse Management System",
   targetIndustry: "Retail",
-  targetRegion: "India",
+  targetRegion: "Pan India",
   sourceUrl: "",
   researchWithLinkUp: false,
 } satisfies Omit<GenerateOpportunityInput, "companyName" | "sourceText">;
@@ -19,7 +19,7 @@ export const sampleScenarios: SampleScenario[] = [
   {
     id: "strong",
     label: "Strong warehouse launch",
-    expectedBandForQaOnly: "early_signal",
+    expectedBandForQaOnly: "medium_priority",
     input: {
       ...base,
       companyName: "Example Retail Ltd",
@@ -29,7 +29,7 @@ export const sampleScenarios: SampleScenario[] = [
   {
     id: "moderate",
     label: "Moderate regional expansion",
-    expectedBandForQaOnly: "early_signal",
+    expectedBandForQaOnly: "low_priority",
     input: {
       ...base,
       companyName: "Regional Commerce Co",
@@ -39,7 +39,7 @@ export const sampleScenarios: SampleScenario[] = [
   {
     id: "funding-only",
     label: "Funding without warehouse evidence",
-    expectedBandForQaOnly: "low_confidence",
+    expectedBandForQaOnly: "low_priority",
     input: {
       ...base,
       companyName: "Funded Marketplace",
@@ -49,7 +49,7 @@ export const sampleScenarios: SampleScenario[] = [
   {
     id: "irrelevant",
     label: "Irrelevant company update",
-    expectedBandForQaOnly: "low_confidence",
+    expectedBandForQaOnly: "low_priority",
     input: {
       ...base,
       companyName: "Example Retail Ltd",

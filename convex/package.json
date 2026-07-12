@@ -1,18 +1,21 @@
 {
-  "name": "@ai-gtm/contracts",
+  "name": "@ai-gtm/backend",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
   "scripts": {
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "tsc --noEmit"
   },
+  "dependencies": {
+    "@ai-gtm/contracts": "workspace:*",
+    "convex": "^1.42.1"
+  },
   "devDependencies": {
+    "@types/node": "^22.15.29",
+    "convex-test": "^0.0.54",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

@@ -68,8 +68,8 @@ describe("AnalyzeExperience", () => {
     expect((await screen.findByRole("alert")).textContent).toContain(
       "Paste source text or retry without company research",
     );
-    expect((screen.getByLabelText("Seller solution") as HTMLInputElement).value).toContain(
-      "Warehouse management",
+    expect((screen.getByLabelText("Seller solution") as HTMLInputElement).value).toBe(
+      "Warehouse Management System",
     );
     await waitFor(() => expect(productClient.trackEvent).toHaveBeenCalledWith(
       "generation_failed",

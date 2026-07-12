@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      convex:
+        specifier: 1.42.1
+        version: 1.42.1(react@19.2.7)
       prettier:
         specifier: ^3.5.3
         version: 3.9.5
@@ -87,6 +90,28 @@ importers:
       wrangler:
         specifier: ^4.110.0
         version: 4.110.0
+
+  convex:
+    dependencies:
+      '@ai-gtm/contracts':
+        specifier: workspace:*
+        version: link:../packages/contracts
+      convex:
+        specifier: ^1.42.1
+        version: 1.42.1(react@19.2.7)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.29
+        version: 22.20.1
+      convex-test:
+        specifier: ^0.0.54
+        version: 0.0.54(convex@1.42.1(react@19.2.7))
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(terser@5.16.9)(yaml@2.9.0)
 
   packages/contracts:
     devDependencies:
@@ -2014,6 +2039,11 @@ packages:
   content-type@2.0.0:
     resolution: {integrity: sha512-j/O/d7GcZCyNl7/hwZAb606rzqkyvaDctLmckbxLzHvFBzTJHuGEdodATcP3yIRoDrLHkIATJuvzbFlp/ki2cQ==}
     engines: {node: '>=18'}
+
+  convex-test@0.0.54:
+    resolution: {integrity: sha512-C0v2SQcuxrELAJRNzE6fQ686XDPor7UFoC22jcoJXeCRqhLo8ZIMZ4jyUHoo1UdAL2enCb0AbiprCVpLDN8u9Q==}
+    peerDependencies:
+      convex: ^1.32.0
 
   convex@1.42.1:
     resolution: {integrity: sha512-yFKp4xerVuBwQqpuTtvosOk9F/fX0twZs+Xti3oj/MlwPUU90QuhgCYo/I2wvFBAFwXsmx9tXpf2q8ekh1+3ug==}
@@ -5067,6 +5097,10 @@ snapshots:
   content-type@1.0.5: {}
 
   content-type@2.0.0: {}
+
+  convex-test@0.0.54(convex@1.42.1(react@19.2.7)):
+    dependencies:
+      convex: 1.42.1(react@19.2.7)
 
   convex@1.42.1(react@19.2.7):
     dependencies:

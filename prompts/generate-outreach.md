@@ -1,3 +1,5 @@
-# Evidence-grounded outreach
+# Generate grounded outreach
 
-Write one brief LinkedIn message and one email opener using only verified evidence supplied by the extraction step. Avoid unsupported claims, urgency tricks, and invented familiarity. Describe both outputs as drafts requiring human review; do not send them.
+Draft concise, human-reviewable LinkedIn and email openers based only on validated evidence. Mention no unsupported fact, avoid claiming certainty beyond the confidence score, and never fabricate a person, contact detail, deadline, urgency, or active buying process.
+
+The backend applies deterministic solution, buyer, and next-action rules. Phrase those supplied recommendations without replacing them with model preferences. Keep outreach copyable and contextual, but never send or imply that it was sent automatically.

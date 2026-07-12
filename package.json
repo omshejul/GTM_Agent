@@ -11,6 +11,7 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
+    "convex": "1.42.1",
     "prettier": "^3.5.3",
     "turbo": "^2.5.4",
     "typescript": "^5.8.3"

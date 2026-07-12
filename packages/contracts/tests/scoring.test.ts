@@ -3,8 +3,22 @@ import { scoreSignals } from "../src";
 
 describe("scoreSignals", () => {
   it("deduplicates signals and caps the score", () => {
-    expect(scoreSignals(["new_warehouse", "new_warehouse"]).intentScore).toBe(30);
-    expect(scoreSignals(["new_warehouse", "warehouse_lease", "automation_investment", "leadership_hiring", "regional_expansion"]).intentScore).toBe(100);
+    expect(scoreSignals(["new_warehouse", "new_warehouse"]).intentScore).toBe(
+      30,
+    );
+    expect(
+      scoreSignals([
+        "new_warehouse",
+        "new_fulfilment_centre",
+        "warehouse_hiring",
+        "automation_investment",
+        "regional_expansion",
+      ]).intentScore,
+    ).toBe(100);
   });
-  it("floors weak evidence at zero", () => expect(scoreSignals(["weak_evidence"]).intentScore).toBe(0));
+  it("returns low priority when there is no warehouse evidence", () =>
+    expect(scoreSignals([])).toMatchObject({
+      intentScore: 0,
+      intentBand: "low_priority",
+    }));
 });
