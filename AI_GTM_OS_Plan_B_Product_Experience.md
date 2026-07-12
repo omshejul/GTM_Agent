@@ -1,5 +1,7 @@
 # Plan B — Next.js Product Experience
 
+> **Runtime decision:** Hermes is not part of the deployed product. The Convex backend calls an OpenAI-compatible model API directly; the frontend never receives its credentials.
+
 ## AI GTM OS: Warehouse Expansion Agent
 
 **Owner:** Teammate B  
@@ -215,4 +217,3 @@ Demo sequence:
 - Sharing works through a read-only public page.
 - Dodo checkout and entitlement UI are ready for the Revenue track or safely feature-gated.
 - No secrets reach the browser and no outreach is sent automatically.
-

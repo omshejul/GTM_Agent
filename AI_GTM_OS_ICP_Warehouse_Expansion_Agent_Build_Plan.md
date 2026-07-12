@@ -1,6 +1,8 @@
 # AI GTM Operating System
 ## Lightweight ICP Discovery Agent: Warehouse Expansion Intelligence
 
+> **Runtime decision:** Hermes may assist development, but it is not a deployed product dependency. The application calls an OpenAI-compatible model API directly.
+
 **Buildathon scope:** AI as Agency / AI as a Service  
 **Estimated MVP build time:** 4–5 hours  
 **Primary goal:** Build one focused, working agent inside the broader AI GTM Operating System.

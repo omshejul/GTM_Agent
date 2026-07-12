@@ -1,5 +1,7 @@
 # Plan A — Intelligence, Data, and Integrations
 
+> **Runtime decision:** Hermes is a development/orchestration assistant only, not a product dependency. References to Hermes below mean the direct OpenAI-compatible AI adapter, implemented as `convex/ai.ts` and configured with `OPENAI_API_KEY`, `OPENAI_MODEL`, and optional `OPENAI_BASE_URL`.
+
 ## AI GTM OS: Warehouse Expansion Agent
 
 **Owner:** Teammate A  
@@ -212,4 +214,3 @@ Deliver within the first checkpoint:
 - Private results are authorization-safe.
 - Dodo webhooks are verified and idempotent for the Revenue track.
 - Plan B integrates through stable Convex functions without duplicating intelligence logic.
-
