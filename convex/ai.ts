@@ -183,22 +183,25 @@ function validateGrounding(
       throw new Error(`Signal ${signal} has no supporting evidence`);
     }
   }
-  for (const evidence of extracted.evidence) {
-    const excerpt = normalizeEvidence(evidence.text);
-    if (evidence.citationIndex === null) {
+  const evidence = extracted.evidence.map((entry) => {
+    const excerpt = normalizeEvidence(entry.text);
+    if (entry.citationIndex === null) {
       if (!sourceText || !sourceText.includes(excerpt)) {
         throw new Error(
           "Pasted-text evidence must be a verbatim source excerpt",
         );
       }
-      continue;
+      return entry;
     }
-    const citation = citations[evidence.citationIndex];
+    const citation = citations[entry.citationIndex];
     const source = citation ? researchByUrl.get(citation.url) : undefined;
-    if (!source || !normalizeEvidence(source.snippet).includes(excerpt)) {
-      throw new Error("Researched evidence must be a verbatim source excerpt");
+    if (!source) {
+      throw new Error("Researched evidence must reference a supplied source");
     }
-  }
+    return normalizeEvidence(source.snippet).includes(excerpt)
+      ? entry
+      : { ...entry, text: source.snippet };
+  });
   const companyName = supportedFact(
     extracted.companyName,
     corpus,
@@ -208,7 +211,7 @@ function validateGrounding(
   const eventType = supportedFact(extracted.eventType, corpus);
   const location = supportedFact(extracted.location, corpus);
   const eventDate = supportedFact(extracted.eventDate, corpus);
-  const evidenceExcerpt = extracted.evidence[0]?.text;
+  const evidenceExcerpt = evidence[0]?.text;
   const subject = companyName ?? "The company";
   const reasoning = evidenceExcerpt
     ? `The opportunity is based on the supplied evidence: "${evidenceExcerpt}"`
@@ -226,6 +229,7 @@ function validateGrounding(
     eventType,
     location,
     eventDate,
+    evidence,
     citations,
     reasoning,
     linkedinMessage,

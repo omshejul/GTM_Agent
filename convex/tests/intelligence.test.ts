@@ -133,7 +133,7 @@ describe("extractOpportunity", () => {
       ...validExtraction,
       evidence: [
         {
-          text: "Acme opened a warehouse in Bengaluru.",
+          text: "Acme expanded its Bengaluru warehouse footprint.",
           signal: "new_warehouse",
           citationIndex: 1,
         },
@@ -150,23 +150,25 @@ describe("extractOpportunity", () => {
       ),
     );
 
-    await expect(
-      extractOpportunity(
-        {
-          sellerSolution: "Warehouse Management System",
-          companyName: "Acme",
-          researchWithLinkUp: true,
-        },
-        research,
-        { apiKey: "test", model: "test-model", fetcher },
-      ),
-    ).resolves.toMatchObject({
+    const result = await extractOpportunity(
+      {
+        sellerSolution: "Warehouse Management System",
+        companyName: "Acme",
+        researchWithLinkUp: true,
+      },
+      research,
+      { apiKey: "test", model: "test-model", fetcher },
+    );
+    expect(result).toMatchObject({
       citations: [
         { url: "https://example.com/first" },
         { url: "https://example.com/warehouse" },
       ],
       evidence: [{ citationIndex: 1 }],
     });
+    expect(result.evidence[0]?.text).toBe(
+      "Acme opened a warehouse in Bengaluru.",
+    );
   });
 
   it("nulls unsupported facts and replaces model-authored narratives", async () => {
