@@ -114,6 +114,61 @@ describe("extractOpportunity", () => {
     ).rejects.toMatchObject({ code: "INVALID_AI_OUTPUT" });
   });
 
+  it("uses the authoritative LinkUp source list for evidence indexes", async () => {
+    const research = [
+      {
+        url: "https://example.com/first",
+        title: "First source",
+        publishedAt: null,
+        snippet: "Acme discussed its retail strategy.",
+      },
+      {
+        url: "https://example.com/warehouse",
+        title: "Warehouse source",
+        publishedAt: "2026-07-01",
+        snippet: "Acme opened a warehouse in Bengaluru.",
+      },
+    ];
+    const extraction = {
+      ...validExtraction,
+      evidence: [
+        {
+          text: "Acme opened a warehouse in Bengaluru.",
+          signal: "new_warehouse",
+          citationIndex: 1,
+        },
+      ],
+      // Models sometimes return only used citations even though evidence
+      // indexes refer to the numbered researchSources input.
+      citations: [research[0]],
+    };
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: JSON.stringify(extraction) } }],
+        }),
+      ),
+    );
+
+    await expect(
+      extractOpportunity(
+        {
+          sellerSolution: "Warehouse Management System",
+          companyName: "Acme",
+          researchWithLinkUp: true,
+        },
+        research,
+        { apiKey: "test", model: "test-model", fetcher },
+      ),
+    ).resolves.toMatchObject({
+      citations: [
+        { url: "https://example.com/first" },
+        { url: "https://example.com/warehouse" },
+      ],
+      evidence: [{ citationIndex: 1 }],
+    });
+  });
+
   it("nulls unsupported facts and replaces model-authored narratives", async () => {
     const invented = {
       ...validExtraction,

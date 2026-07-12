@@ -117,6 +117,23 @@ function userPrompt(
   });
 }
 
+function normalizeResearchCitations(
+  value: unknown,
+  research: ResearchSource[],
+) {
+  if (!research.length || typeof value !== "object" || value === null) {
+    return value;
+  }
+  return {
+    ...(value as Record<string, unknown>),
+    citations: research.map(({ url, title, publishedAt }) => ({
+      url,
+      title,
+      publishedAt,
+    })),
+  };
+}
+
 function normalizeEvidence(value: string) {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -310,7 +327,9 @@ export async function extractOpportunity(
         const content = payload.choices?.[0]?.message?.content;
         if (!content) throw new Error("Missing model content");
         const extracted = validateGrounding(
-          parseExtractedOpportunity(JSON.parse(content)),
+          parseExtractedOpportunity(
+            normalizeResearchCitations(JSON.parse(content), research),
+          ),
           input,
           research,
         );
